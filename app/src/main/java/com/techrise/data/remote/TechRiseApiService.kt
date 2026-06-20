@@ -7,7 +7,9 @@ import retrofit2.http.*
 data class RegisterRequest(
     val email: String,
     val password: String,
-    val role: String = "CUSTOMER"
+    val role: String = "CUSTOMER",
+    val adminSecret: String? = null,
+    val mobile: String? = null
 )
 
 data class RegisterResponse(
@@ -55,7 +57,9 @@ data class ComplaintResponse(
     val status: String, // PENDING, IN_PROGRESS, RESOLVED
     val priority: String, // LOW, MEDIUM, HIGH
     val customerId: String,
+    val customerEmail: String?,
     val assignedAdminId: String?,
+    val assignedAdminEmail: String?,
     val rating: Int?,
     val feedbackComment: String?,
     val createdAt: FirestoreTimestamp?,
@@ -71,6 +75,7 @@ data class ComplaintLogResponse(
     val id: String,
     val complaintId: String,
     val actionBy: String,
+    val actionByEmail: String?,
     val oldStatus: String,
     val newStatus: String,
     val comment: String,
@@ -86,12 +91,37 @@ data class FeedbackResponse(
     val message: String
 )
 
+data class EmployeeResponse(
+    val id: String,
+    val email: String
+)
+
 data class NewsResponse(
     val id: String,
     val title: String,
     val content: String,
     val authorId: String,
     val createdAt: FirestoreTimestamp
+)
+
+data class CreateNewsRequest(
+    val title: String,
+    val content: String
+)
+
+data class UpdateStatusRequest(
+    val status: String,
+    val comment: String,
+    val priority: String? = null,
+    val assignedAdminId: String? = null
+)
+
+data class UpdateStatusResponse(
+    val message: String,
+    val complaintId: String,
+    val oldStatus: String,
+    val newStatus: String,
+    val assignedAdminId: String
 )
 
 // --- Retrofit API Service Interface ---
@@ -138,4 +168,28 @@ interface TechRiseApiService {
     suspend fun getNewsList(
         @Header("Authorization") token: String
     ): List<NewsResponse>
+
+    @POST("news")
+    suspend fun createNews(
+        @Header("Authorization") token: String,
+        @Body request: CreateNewsRequest
+    ): NewsResponse
+
+    @DELETE("news/{id}")
+    suspend fun deleteNews(
+        @Header("Authorization") token: String,
+        @Path("id") id: String
+    ): FeedbackResponse
+
+    @PUT("complaints/{id}/status")
+    suspend fun updateComplaintStatus(
+        @Header("Authorization") token: String,
+        @Path("id") id: String,
+        @Body request: UpdateStatusRequest
+    ): UpdateStatusResponse
+
+    @GET("auth/employees")
+    suspend fun getEmployees(
+        @Header("Authorization") token: String
+    ): List<EmployeeResponse>
 }

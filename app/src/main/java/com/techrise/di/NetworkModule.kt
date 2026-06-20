@@ -11,12 +11,14 @@ import retrofit2.converter.gson.GsonConverterFactory
 import com.techrise.data.remote.TechRiseApiService
 import javax.inject.Singleton
 
+import java.util.concurrent.TimeUnit
+
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    // Local Wi-Fi IP of development computer (allows physical device testing)
-    private const val BASE_URL = "http://172.17.172.72:5000/api/"
+    // Render Production API URL
+    private const val BASE_URL = "https://techrise-backend.onrender.com/api/"
 
     @Provides
     @Singleton
@@ -26,6 +28,10 @@ object NetworkModule {
         }
         return OkHttpClient.Builder()
             .addInterceptor(logging)
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
             .build()
     }
 

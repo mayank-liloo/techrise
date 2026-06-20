@@ -30,11 +30,11 @@ sealed interface SingleComplaintUiState {
     data class Error(val message: String) : SingleComplaintUiState
 }
 
-sealed interface CreateTicketUiState {
-    object Idle : CreateTicketUiState
-    object Loading : CreateTicketUiState
-    object Success : CreateTicketUiState
-    data class Error(val message: String) : CreateTicketUiState
+sealed interface CreateComplaintUiState {
+    object Idle : CreateComplaintUiState
+    object Loading : CreateComplaintUiState
+    object Success : CreateComplaintUiState
+    data class Error(val message: String) : CreateComplaintUiState
 }
 
 @HiltViewModel
@@ -48,8 +48,8 @@ class CustomerViewModel @Inject constructor(
     private val _singleComplaintState = MutableStateFlow<SingleComplaintUiState>(SingleComplaintUiState.Idle)
     val singleComplaintState: StateFlow<SingleComplaintUiState> = _singleComplaintState.asStateFlow()
 
-    private val _createTicketState = MutableStateFlow<CreateTicketUiState>(CreateTicketUiState.Idle)
-    val createTicketState: StateFlow<CreateTicketUiState> = _createTicketState.asStateFlow()
+    private val _createComplaintState = MutableStateFlow<CreateComplaintUiState>(CreateComplaintUiState.Idle)
+    val createComplaintState: StateFlow<CreateComplaintUiState> = _createComplaintState.asStateFlow()
 
     private val _newsState = MutableStateFlow<List<NewsResponse>>(emptyList())
     val newsState: StateFlow<List<NewsResponse>> = _newsState.asStateFlow()
@@ -90,16 +90,16 @@ class CustomerViewModel @Inject constructor(
     }
 
     fun createComplaint(title: String, description: String, priority: String) {
-        _createTicketState.value = CreateTicketUiState.Loading
+        _createComplaintState.value = CreateComplaintUiState.Loading
         viewModelScope.launch {
             repository.createComplaint(title, description, priority)
                 .onSuccess {
-                    _createTicketState.value = CreateTicketUiState.Success
+                    _createComplaintState.value = CreateComplaintUiState.Success
                     loadComplaints()
                 }
                 .onFailure { exception ->
-                    _createTicketState.value = CreateTicketUiState.Error(
-                        exception.message ?: "Failed to submit ticket."
+                    _createComplaintState.value = CreateComplaintUiState.Error(
+                        exception.message ?: "Failed to submit complaint."
                     )
                 }
         }
@@ -110,6 +110,7 @@ class CustomerViewModel @Inject constructor(
             repository.submitFeedback(id, rating, comment)
                 .onSuccess {
                     loadComplaintDetails(id)
+                    loadComplaints()
                 }
                 .onFailure {
                     // Handle feedback submission error
@@ -130,7 +131,7 @@ class CustomerViewModel @Inject constructor(
     }
 
     fun resetCreateState() {
-        _createTicketState.value = CreateTicketUiState.Idle
+        _createComplaintState.value = CreateComplaintUiState.Idle
     }
 
     fun getEmail(): String = repository.getEmail() ?: ""

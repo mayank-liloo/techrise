@@ -43,7 +43,7 @@ class TechRiseRepository @Inject constructor(
         return "Bearer $token"
     }
 
-    // --- Complaints (Tickets) ---
+    // --- Complaints ---
 
     suspend fun createComplaint(title: String, description: String, priority: String): Result<CreateComplaintResponse> = runCatching {
         apiService.createComplaint(
@@ -76,5 +76,28 @@ class TechRiseRepository @Inject constructor(
 
     suspend fun getNewsList(): Result<List<NewsResponse>> = runCatching {
         apiService.getNewsList(getAuthHeader())
+    }
+
+    suspend fun createNews(title: String, content: String): Result<NewsResponse> = runCatching {
+        apiService.createNews(
+            token = getAuthHeader(),
+            request = CreateNewsRequest(title, content)
+        )
+    }
+
+    suspend fun deleteNews(id: String): Result<FeedbackResponse> = runCatching {
+        apiService.deleteNews(getAuthHeader(), id)
+    }
+
+    suspend fun updateComplaintStatus(id: String, status: String, comment: String, priority: String? = null, assignedAdminId: String? = null): Result<UpdateStatusResponse> = runCatching {
+        apiService.updateComplaintStatus(
+            token = getAuthHeader(),
+            id = id,
+            request = UpdateStatusRequest(status, comment, priority, assignedAdminId)
+        )
+    }
+
+    suspend fun getEmployees(): Result<List<EmployeeResponse>> = runCatching {
+        apiService.getEmployees(getAuthHeader())
     }
 }

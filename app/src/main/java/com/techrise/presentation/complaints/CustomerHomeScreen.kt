@@ -1,41 +1,61 @@
 package com.techrise.presentation.complaints
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.techrise.presentation.theme.*
+import kotlinx.coroutines.delay
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
+import android.net.Uri
 import com.techrise.data.remote.ComplaintResponse
 import com.techrise.data.remote.NewsResponse
 import java.text.SimpleDateFormat
 import java.util.*
 
+enum class CustomerScreen {
+    DASHBOARD,
+    COMPLAINTS,
+    FEEDBACK,
+    NEWS,
+    SUPPORT
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomerHomeScreen(
     viewModel: CustomerViewModel,
-    onCreateTicketClick: () -> Unit,
-    onTicketClick: (id: String) -> Unit,
+    onCreateComplaintClick: () -> Unit,
+    onComplaintClick: (id: String) -> Unit,
     onLogout: () -> Unit
 ) {
     val complaintsState by viewModel.complaintsState.collectAsState()
     val newsState by viewModel.newsState.collectAsState()
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var currentScreen by remember { mutableStateOf(CustomerScreen.DASHBOARD) }
 
     LaunchedEffect(Unit) {
         viewModel.loadComplaints()
@@ -47,16 +67,32 @@ fun CustomerHomeScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Tech Rise Portal", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        val titleText = when (currentScreen) {
+                            CustomerScreen.DASHBOARD -> "Tech Rise Portal"
+                            CustomerScreen.COMPLAINTS -> "My Complaints"
+                            CustomerScreen.FEEDBACK -> "Feedback Center"
+                            CustomerScreen.NEWS -> "News Bulletins"
+                            CustomerScreen.SUPPORT -> "Support Center"
+                        }
+                        Text(titleText, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                         Text(viewModel.getEmail(), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
+                navigationIcon = {
+                    if (currentScreen != CustomerScreen.DASHBOARD) {
+                        IconButton(onClick = { currentScreen = CustomerScreen.DASHBOARD }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back to Dashboard")
+                        }
+                    }
+                },
                 actions = {
-                    IconButton(onClick = {
-                        viewModel.logout()
-                        onLogout()
-                    }) {
-                        Icon(Icons.Default.ExitToApp, contentDescription = "Log Out")
+                    if (currentScreen == CustomerScreen.DASHBOARD) {
+                        IconButton(onClick = {
+                            viewModel.logout()
+                            onLogout()
+                        }) {
+                            Icon(Icons.Default.ExitToApp, contentDescription = "Log Out")
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -64,34 +100,12 @@ fun CustomerHomeScreen(
                 )
             )
         },
-        bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    icon = { Icon(Icons.Default.List, contentDescription = "Tracker") },
-                    label = { Text("Tracker") }
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    icon = { Icon(Icons.Default.Info, contentDescription = "News") },
-                    label = { Text("News") }
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
-                    icon = { Icon(Icons.Default.Phone, contentDescription = "Support") },
-                    label = { Text("Support") }
-                )
-            }
-        },
         floatingActionButton = {
-            if (selectedTab == 0) {
+            if (currentScreen == CustomerScreen.COMPLAINTS) {
                 ExtendedFloatingActionButton(
-                    onClick = onCreateTicketClick,
+                    onClick = onCreateComplaintClick,
                     icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                    text = { Text("New Ticket") },
+                    text = { Text("New Complaint") },
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
@@ -103,25 +117,645 @@ fun CustomerHomeScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            when (selectedTab) {
-                0 -> TrackerTabContent(
+            when (currentScreen) {
+                CustomerScreen.DASHBOARD -> DashboardContent(
+                    viewModel = viewModel,
+                    complaintsCount = (complaintsState as? ComplaintsUiState.Success)?.complaints?.size ?: 0,
+                    activeComplaintsCount = (complaintsState as? ComplaintsUiState.Success)?.complaints?.count { it.status != "RESOLVED" } ?: 0,
+                    newsCount = newsState.size,
+                    onNavigate = { screen -> currentScreen = screen }
+                )
+                CustomerScreen.COMPLAINTS -> TrackerTabContent(
                     state = complaintsState,
-                    onTicketClick = onTicketClick,
+                    onComplaintClick = onComplaintClick,
                     onRetry = { viewModel.loadComplaints() }
                 )
-                1 -> NewsTabContent(news = newsState)
-                2 -> SupportTabContent()
+                CustomerScreen.NEWS -> NewsTabContent(news = newsState)
+                CustomerScreen.SUPPORT -> SupportTabContent()
+                CustomerScreen.FEEDBACK -> FeedbackScreenContent(
+                    viewModel = viewModel,
+                    complaints = (complaintsState as? ComplaintsUiState.Success)?.complaints ?: emptyList()
+                )
             }
         }
     }
 }
 
-// --- TRACKER TAB CONTENT ---
+data class SlideData(
+    val title: String,
+    val description: String,
+    val background: Brush,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector
+)
+
+@Composable
+fun SlidingBanner() {
+    val slideCount = 4
+    var currentSlide by remember { mutableStateOf(0) }
+    
+    // Auto-scroll effect
+    LaunchedEffect(currentSlide) {
+        delay(4000) // Wait 4 seconds
+        currentSlide = (currentSlide + 1) % slideCount
+    }
+
+    val slides = listOf(
+        SlideData(
+            title = "Banner 1",
+            description = "",
+            background = Brush.linearGradient(listOf(Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364))),
+            icon = Icons.Default.Send
+        ),
+        SlideData(
+            title = "Banner 2",
+            description = "",
+            background = Brush.linearGradient(listOf(Color(0xFF11998E), Color(0xFF38EF7D))),
+            icon = Icons.Default.Phone
+        ),
+        SlideData(
+            title = "Banner 3",
+            description = "",
+            background = Brush.linearGradient(listOf(Color(0xFFFC4A1A), Color(0xFFF7B733))),
+            icon = Icons.Default.Star
+        ),
+        SlideData(
+            title = "Banner 4",
+            description = "",
+            background = Brush.linearGradient(listOf(Color(0xFF141E30), Color(0xFF243B55))),
+            icon = Icons.Default.Notifications
+        )
+    )
+
+    val currentData = slides[currentSlide]
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(150.dp)
+            .pointerInput(Unit) {
+                var totalDrag = 0f
+                detectHorizontalDragGestures(
+                    onDragStart = { totalDrag = 0f },
+                    onDragEnd = {
+                        if (totalDrag > 50f) {
+                            currentSlide = (currentSlide - 1 + slideCount) % slideCount
+                        } else if (totalDrag < -50f) {
+                            currentSlide = (currentSlide + 1) % slideCount
+                        }
+                    },
+                    onHorizontalDrag = { _, dragAmount ->
+                        totalDrag += dragAmount
+                    }
+                )
+            },
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Crossfade(
+                targetState = currentData,
+                animationSpec = tween(600),
+                label = "slide_transition"
+            ) { data ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(data.background)
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 16.dp, bottom = 12.dp),
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = data.title,
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = data.description,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.White.copy(alpha = 0.85f),
+                                maxLines = 2
+                            )
+                        }
+                        
+                        // Graphic Asset Illustration
+                        Icon(
+                            imageVector = data.icon,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.25f),
+                            modifier = Modifier
+                                .size(72.dp)
+                                .padding(end = 4.dp)
+                        )
+                    }
+                }
+            }
+
+            // Dots Indicator
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                for (i in 0 until slideCount) {
+                    val isActive = i == currentSlide
+                    Box(
+                        modifier = Modifier
+                            .size(if (isActive) 8.dp else 6.dp)
+                            .background(
+                                color = if (isActive) Color.White else Color.White.copy(alpha = 0.4f),
+                                shape = CircleShape
+                            )
+                            .clickable { currentSlide = i }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DashboardCard(
+    title: String,
+    subtitle: String,
+    info: String,
+    color: Color,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = color),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Text(
+                text = info,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+@Composable
+fun DashboardContent(
+    viewModel: CustomerViewModel,
+    complaintsCount: Int,
+    activeComplaintsCount: Int,
+    newsCount: Int,
+    onNavigate: (CustomerScreen) -> Unit
+) {
+    val username = viewModel.getEmail().substringBefore("@").replaceFirstChar {
+        if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
+    }
+    
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Welcome back,",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = username,
+            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+
+        SlidingBanner()
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Symmetric 2x2 grid layout
+        // Row 1: Complaint & News
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            DashboardCard(
+                title = "Complaint",
+                subtitle = "Track & file",
+                info = "$activeComplaintsCount Active",
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                icon = Icons.Default.List,
+                onClick = { onNavigate(CustomerScreen.COMPLAINTS) },
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+            )
+
+            DashboardCard(
+                title = "News",
+                subtitle = "Latest announcements",
+                info = "$newsCount Updates",
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                icon = Icons.Default.Info,
+                onClick = { onNavigate(CustomerScreen.NEWS) },
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Row 2: Feedback & Support
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            DashboardCard(
+                title = "Feedback",
+                subtitle = "Rate resolved cases",
+                info = "Help us improve",
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                icon = Icons.Default.Star,
+                onClick = { onNavigate(CustomerScreen.FEEDBACK) },
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+            )
+
+            DashboardCard(
+                title = "Support",
+                subtitle = "FAQ & direct contact",
+                info = "No: 1234567890",
+                color = MaterialTheme.colorScheme.primaryContainer,
+                icon = Icons.Default.Phone,
+                onClick = { onNavigate(CustomerScreen.SUPPORT) },
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FeedbackScreenContent(
+    viewModel: CustomerViewModel,
+    complaints: List<ComplaintResponse>
+) {
+    val context = LocalContext.current
+    var generalRating by remember { mutableStateOf(0) }
+    var comment by remember { mutableStateOf("") }
+    var selectedComplaintId by remember { mutableStateOf<String?>(null) }
+    var complaintRating by remember { mutableStateOf(0) }
+
+    val resolvedComplaints = complaints.filter { it.status == "RESOLVED" }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            Text(
+                "Rate our overall service",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            StarRating(rating = generalRating, onRatingSelected = { generalRating = it })
+        }
+
+        if (resolvedComplaints.isNotEmpty()) {
+            item {
+                Text(
+                    "Rate specific resolved complaints",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            items(resolvedComplaints) { complaint ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (selectedComplaintId == complaint.id) 
+                            MaterialTheme.colorScheme.primaryContainer 
+                        else MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    onClick = { 
+                        selectedComplaintId = complaint.id 
+                    }
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(complaint.title, fontWeight = FontWeight.Bold)
+                        val resolvedDateStr = if (complaint.updatedAt != null) {
+                            val date = Date(complaint.updatedAt._seconds * 1000)
+                            SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()).format(date)
+                        } else {
+                            "Just now"
+                        }
+                        Text("Resolved on: $resolvedDateStr", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (selectedComplaintId == complaint.id) {
+                            StarRating(rating = complaintRating, onRatingSelected = { complaintRating = it })
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            OutlinedTextField(
+                value = comment,
+                onValueChange = { comment = it },
+                label = { Text("Any additional comments?") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 3
+            )
+        }
+
+        item {
+            Button(
+                onClick = {
+                    if (selectedComplaintId != null) {
+                        viewModel.submitFeedback(
+                            id = selectedComplaintId!!,
+                            rating = complaintRating,
+                            comment = comment
+                        )
+                    }
+                    android.widget.Toast.makeText(
+                        context,
+                        "Thank you for your feedback!",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+
+                    // Reset form
+                    generalRating = 0
+                    comment = ""
+                    selectedComplaintId = null
+                    complaintRating = 0
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = generalRating > 0
+            ) {
+                Text("Submit Feedback")
+            }
+        }
+    }
+}
+
+@Composable
+fun StarRating(
+    rating: Int,
+    onRatingSelected: (Int) -> Unit
+) {
+    Row {
+        (1..5).forEach { index ->
+            IconButton(onClick = { onRatingSelected(index) }) {
+                Icon(
+                    imageVector = if (index <= rating) Icons.Filled.Star else Icons.Outlined.Star,
+                    contentDescription = null,
+                    tint = if (index <= rating) Color(0xFFFFD700) else Color.Gray
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun NewsTabContent(news: List<NewsResponse>) {
+    if (news.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+            Text("No news updates at this time.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(news) { item ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = item.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = item.content,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        val date = Date(item.createdAt._seconds * 1000)
+                        val formattedDate = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(date)
+                        
+                        Text(
+                            text = "Published $formattedDate",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SupportTabContent() {
+    val faqs = listOf(
+        Pair("How do I raise a complaint?", "Tap the 'New Complaint' button on the Tracker screen. Provide a clear title, description, and assign the priority level. Submit, and our team will be notified immediately."),
+        Pair("What are the priority levels?", "We resolve HIGH priority issues within 24 hours. MEDIUM priority targets 48 hours, and LOW priority targets 72 hours."),
+        Pair("How can I track the complaint resolution?", "Select any complaint from your Tracker list. A visual timeline is generated detailing when it was registered, when staff members were assigned, and when it is completed.")
+    )
+
+    val context = LocalContext.current
+    val supportPhone = "1234567890"
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Direct support cards
+        item {
+            Text(
+                text = "Contact Support",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$supportPhone"))
+                        context.startActivity(intent)
+                    },
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                "Contact Support Line",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "1234567890",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$supportPhone"))
+                                context.startActivity(intent)
+                            },
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                contentColor = MaterialTheme.colorScheme.primaryContainer
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Phone,
+                                contentDescription = "Call Support"
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Divider(color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    Text(
+                        "Support Email",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "support@techrise.com",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+        }
+
+        // FAQs Section
+        item {
+            Text(
+                text = "Frequently Asked Questions",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
+            )
+        }
+
+        items(faqs) { faq ->
+            var expanded by remember { mutableStateOf(false) }
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded },
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = faq.first,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    AnimatedVisibility(visible = expanded) {
+                        Column {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = faq.second,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun TrackerTabContent(
     state: ComplaintsUiState,
-    onTicketClick: (id: String) -> Unit,
+    onComplaintClick: (id: String) -> Unit,
     onRetry: () -> Unit
 ) {
     when (state) {
@@ -146,7 +780,7 @@ fun TrackerTabContent(
             if (state.complaints.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
                     Text(
-                        "No complaints found. Tap 'New Ticket' to submit one.",
+                        "No complaints found. Tap 'New Complaint' to submit one.",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.outline
                     )
@@ -158,7 +792,7 @@ fun TrackerTabContent(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(state.complaints) { complaint ->
-                        ComplaintCard(complaint = complaint, onClick = { onTicketClick(complaint.id) })
+                        ComplaintCard(complaint = complaint, onClick = { onComplaintClick(complaint.id) })
                     }
                 }
             }
@@ -239,7 +873,7 @@ fun ComplaintCard(complaint: ComplaintResponse, onClick: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Priority: ", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
+                    Text("Priority: ", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
                         text = complaint.priority,
                         style = MaterialTheme.typography.labelMedium,
@@ -259,155 +893,8 @@ fun ComplaintCard(complaint: ComplaintResponse, onClick: () -> Unit) {
                 Text(
                     text = dateStr,
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.outline
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            }
-        }
-    }
-}
-
-// --- NEWS TAB CONTENT ---
-
-@Composable
-fun NewsTabContent(news: List<NewsResponse>) {
-    if (news.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-            Text("No news updates at this time.", color = MaterialTheme.colorScheme.outline)
-        }
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(news) { item ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = item.title,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = item.content,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        val date = Date(item.createdAt._seconds * 1000)
-                        val formattedDate = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(date)
-                        
-                        Text(
-                            text = "Published $formattedDate",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.outline
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-// --- SUPPORT TAB CONTENT ---
-
-@Composable
-fun SupportTabContent() {
-    val faqs = listOf(
-        Pair("How do I raise a complaint ticket?", "Tap the 'New Ticket' button on the Tracker screen. Provide a clear title, description, and assign the priority level. Submit, and our team will be notified immediately."),
-        Pair("What are the priority levels?", "We resolve HIGH priority issues within 24 hours. MEDIUM priority targets 48 hours, and LOW priority targets 72 hours."),
-        Pair("How can I track the ticket resolution?", "Select any ticket from your Tracker list. A visual timeline is generated detailing when it was registered, when staff members were assigned, and when it is completed.")
-    )
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Direct support cards
-        item {
-            Text(
-                text = "Contact Support",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        "Direct Hotline",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        "+1 (800) 555-RISE (Toll-Free)",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        "Support Email",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        "support@techrise.com",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
-        }
-
-        // FAQs Section
-        item {
-            Text(
-                text = "Frequently Asked Questions",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
-            )
-        }
-
-        items(faqs) { faq ->
-            var expanded by remember { mutableStateOf(false) }
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { expanded = !expanded },
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = faq.first,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    AnimatedVisibility(visible = expanded) {
-                        Column {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = faq.second,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
             }
         }
     }

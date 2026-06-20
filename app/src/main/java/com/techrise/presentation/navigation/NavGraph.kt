@@ -1,6 +1,7 @@
 package com.techrise.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -9,13 +10,18 @@ import androidx.navigation.compose.rememberNavController
 import com.techrise.presentation.auth.AuthScreen
 import com.techrise.presentation.auth.AuthViewModel
 import com.techrise.presentation.complaints.*
+import com.techrise.presentation.admin.*
 
 sealed class Screen(val route: String) {
     object Auth : Screen("auth")
     object CustomerHome : Screen("customer_home")
-    object CreateTicket : Screen("create_ticket")
-    object TicketDetails : Screen("ticket_details/{ticketId}") {
-        fun createRoute(ticketId: String) = "ticket_details/$ticketId"
+    object CreateComplaint : Screen("create_complaint")
+    object ComplaintDetails : Screen("complaint_details/{complaintId}") {
+        fun createRoute(complaintId: String) = "complaint_details/$complaintId"
+    }
+    object AdminHome : Screen("admin_home")
+    object AdminComplaintDetails : Screen("admin_complaint_details/{complaintId}") {
+        fun createRoute(complaintId: String) = "admin_complaint_details/$complaintId"
     }
 }
 
@@ -32,26 +38,31 @@ fun TechRiseNavGraph(
             AuthScreen(
                 viewModel = authViewModel,
                 onAuthSuccess = { role ->
-                    // For Day 5, we route both Customers and Employees to CustomerHome.
-                    // On Day 6, we will hook the Admin (Employee) Dashboard route here.
-                    navController.navigate(Screen.CustomerHome.route) {
-                        popUpTo(Screen.Auth.route) { inclusive = true }
+                    if (role.uppercase() == "ADMIN") {
+                        navController.navigate(Screen.AdminHome.route) {
+                            popUpTo(Screen.Auth.route) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Screen.CustomerHome.route) {
+                            popUpTo(Screen.Auth.route) { inclusive = true }
+                        }
                     }
                 }
             )
         }
 
-        composable(Screen.CustomerHome.route) {
-            val customerViewModel: CustomerViewModel = hiltViewModel()
+        composable(Screen.CustomerHome.route) { backStackEntry ->
+            val customerViewModel: CustomerViewModel = hiltViewModel(backStackEntry)
             CustomerHomeScreen(
                 viewModel = customerViewModel,
-                onCreateTicketClick = {
-                    navController.navigate(Screen.CreateTicket.route)
+                onCreateComplaintClick = {
+                    navController.navigate(Screen.CreateComplaint.route)
                 },
-                onTicketClick = { ticketId ->
-                    navController.navigate(Screen.TicketDetails.createRoute(ticketId))
+                onComplaintClick = { complaintId ->
+                    navController.navigate(Screen.ComplaintDetails.createRoute(complaintId))
                 },
                 onLogout = {
+                    customerViewModel.logout()
                     navController.navigate(Screen.Auth.route) {
                         popUpTo(Screen.CustomerHome.route) { inclusive = true }
                     }
@@ -59,8 +70,11 @@ fun TechRiseNavGraph(
             )
         }
 
-        composable(Screen.CreateTicket.route) {
-            val customerViewModel: CustomerViewModel = hiltViewModel()
+        composable(Screen.CreateComplaint.route) { backStackEntry ->
+            val parentEntry = remember(backStackEntry) {
+                navController.getBackStackEntry(Screen.CustomerHome.route)
+            }
+            val customerViewModel: CustomerViewModel = hiltViewModel(parentEntry)
             CreateComplaintScreen(
                 viewModel = customerViewModel,
                 onBack = {
@@ -69,12 +83,47 @@ fun TechRiseNavGraph(
             )
         }
 
-        composable(Screen.TicketDetails.route) { backStackEntry ->
-            val ticketId = backStackEntry.arguments?.getString("ticketId") ?: ""
-            val customerViewModel: CustomerViewModel = hiltViewModel()
+        composable(Screen.ComplaintDetails.route) { backStackEntry ->
+            val complaintId = backStackEntry.arguments?.getString("complaintId") ?: ""
+            val parentEntry = remember(backStackEntry) {
+                navController.getBackStackEntry(Screen.CustomerHome.route)
+            }
+            val customerViewModel: CustomerViewModel = hiltViewModel(parentEntry)
             ComplaintDetailScreen(
-                complaintId = ticketId,
+                complaintId = complaintId,
                 viewModel = customerViewModel,
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.AdminHome.route) { backStackEntry ->
+            val adminViewModel: AdminViewModel = hiltViewModel(backStackEntry)
+            AdminHomeScreen(
+                viewModel = adminViewModel,
+                onComplaintClick = { complaintId ->
+                    navController.navigate(Screen.AdminComplaintDetails.createRoute(complaintId))
+                },
+                onLogout = {
+                    adminViewModel.logout()
+                    adminViewModel.clearError()
+                    navController.navigate(Screen.Auth.route) {
+                        popUpTo(Screen.AdminHome.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Screen.AdminComplaintDetails.route) { backStackEntry ->
+            val complaintId = backStackEntry.arguments?.getString("complaintId") ?: ""
+            val parentEntry = remember(backStackEntry) {
+                navController.getBackStackEntry(Screen.AdminHome.route)
+            }
+            val adminViewModel: AdminViewModel = hiltViewModel(parentEntry)
+            AdminComplaintDetailsScreen(
+                complaintId = complaintId,
+                viewModel = adminViewModel,
                 onBack = {
                     navController.popBackStack()
                 }

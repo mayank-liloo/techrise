@@ -1,10 +1,13 @@
 package com.techrise.presentation.auth
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -12,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -27,7 +31,8 @@ fun AuthScreen(
     var isLoginTab by remember { mutableStateOf(true) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var role by remember { mutableStateOf("CUSTOMER") } // For registration
+    var mobile by remember { mutableStateOf("") }
+    val role = "CUSTOMER"
 
     LaunchedEffect(uiState) {
         if (uiState is AuthUiState.Success) {
@@ -72,9 +77,9 @@ fun AuthScreen(
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = if (isLoginTab) "Sign in to access your portal" else "Register a new client or staff account",
+                text = if (isLoginTab) "Sign in to access your portal" else "Register a new client account",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.outline
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -134,31 +139,16 @@ fun AuthScreen(
 
             if (!isLoginTab) {
                 Spacer(modifier = Modifier.height(16.dp))
-                
-                // Role Selector (Customer / Admin)
-                Text(
-                    text = "Select Account Role:",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.align(Alignment.Start)
-                )
-                
-                Row(
+                OutlinedTextField(
+                    value = mobile,
+                    onValueChange = { mobile = it },
+                    label = { Text("Mobile Number") },
+                    placeholder = { Text("e.g. +1234567890") },
+                    leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
-                        selected = role == "CUSTOMER",
-                        onClick = { role = "CUSTOMER" }
-                    )
-                    Text("Customer", modifier = Modifier.padding(end = 16.dp))
-                    
-                    RadioButton(
-                        selected = role == "ADMIN",
-                        onClick = { role = "ADMIN" }
-                    )
-                    Text("Employee (Admin)")
-                }
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                )
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -169,10 +159,16 @@ fun AuthScreen(
                     if (isLoginTab) {
                         viewModel.login(email.trim(), password)
                     } else {
-                        viewModel.register(email.trim(), password, role)
+                        viewModel.register(
+                            email = email.trim(),
+                            password = password,
+                            role = role,
+                            adminSecret = null,
+                            mobile = mobile.trim()
+                        )
                     }
                 },
-                enabled = email.isNotBlank() && password.isNotBlank() && uiState !is AuthUiState.Loading,
+                enabled = email.isNotBlank() && password.isNotBlank() && (isLoginTab || mobile.isNotBlank()) && uiState !is AuthUiState.Loading,
                 modifier = Modifier.fillMaxWidth().height(50.dp)
             ) {
                 if (uiState is AuthUiState.Loading) {

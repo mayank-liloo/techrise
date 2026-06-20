@@ -15,6 +15,11 @@ const createComplaint = async (req, res) => {
       ? priority.toUpperCase() 
       : 'MEDIUM';
 
+    // Generate clean short Complaint ID
+    const snapshot = await db.collection('complaints').get();
+    const count = snapshot.size;
+    const cleanId = `TKT-${1001 + count}`;
+
     // Create complaint document
     const complaintData = {
       title: title.trim(),
@@ -27,11 +32,11 @@ const createComplaint = async (req, res) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
 
-    const docRef = await db.collection('complaints').add(complaintData);
+    await db.collection('complaints').doc(cleanId).set(complaintData);
 
     // Create audit log record
     await db.collection('complaintLogs').add({
-      complaintId: docRef.id,
+      complaintId: cleanId,
       actionBy: customerId,
       oldStatus: 'NONE',
       newStatus: 'PENDING',
@@ -39,9 +44,34 @@ const createComplaint = async (req, res) => {
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
+    // Retrieve all employee mobile numbers and simulate sending notifications
+    try {
+      const employeeSnapshot = await db.collection('users').where('role', '==', 'ADMIN').get();
+      const notifications = [];
+      employeeSnapshot.forEach(doc => {
+        const u = doc.data();
+        if (u.mobile) {
+          notifications.push({
+            id: doc.id,
+            email: u.email,
+            mobile: u.mobile
+          });
+        }
+      });
+      
+      console.log(`\n🔔 [NOTIFICATION SYSTEM] Triggered for Complaint ${cleanId} "${title.trim()}"`);
+      notifications.forEach(emp => {
+        console.log(`   📨 Sending SMS to Employee ${emp.id} (${emp.email}) at number ${emp.mobile}...`);
+        console.log(`   💬 "Hi employee, a new customer complaint has been registered. Complaint ID: ${cleanId}, Title: ${title.trim()}."`);
+      });
+      console.log(`🔔 [NOTIFICATION SYSTEM] Successfully notified ${notifications.length} employee(s) via SMS simulation.\n`);
+    } catch (notificationErr) {
+      console.error('Failed to notify employees:', notificationErr);
+    }
+
     return res.status(201).json({
       message: 'Complaint raised successfully.',
-      complaintId: docRef.id,
+      complaintId: cleanId,
       ...complaintData
     });
 
@@ -67,18 +97,38 @@ const getComplaints = async (req, res) => {
 
     const snapshot = await query.get();
     const complaints = [];
+    const userIds = new Set();
+    
     snapshot.forEach(doc => {
-      complaints.push({ id: doc.id, ...doc.data() });
+      const data = doc.data();
+      if (data.customerId) userIds.add(data.customerId);
+      if (data.assignedAdminId) userIds.add(data.assignedAdminId);
+      complaints.push({ id: doc.id, ...data });
     });
 
+    // Bulk resolve emails
+    const userEmails = {};
+    if (userIds.size > 0) {
+      const userDocs = await db.collection('users').where(admin.firestore.FieldPath.documentId(), 'in', Array.from(userIds)).get();
+      userDocs.forEach(udoc => {
+        userEmails[udoc.id] = udoc.data().email;
+      });
+    }
+
+    const resolvedComplaints = complaints.map(c => ({
+      ...c,
+      customerEmail: userEmails[c.customerId] || 'Unknown Customer',
+      assignedAdminEmail: userEmails[c.assignedAdminId] || (c.assignedAdminId ? 'Unknown Staff' : null)
+    }));
+
     // Sort in-memory by createdAt descending
-    complaints.sort((a, b) => {
+    resolvedComplaints.sort((a, b) => {
       const timeA = a.createdAt ? (a.createdAt.seconds || 0) : 0;
       const timeB = b.createdAt ? (b.createdAt.seconds || 0) : 0;
       return timeB - timeA;
     });
 
-    return res.status(200).json(complaints);
+    return res.status(200).json(resolvedComplaints);
   } catch (err) {
     console.error('Get Complaints Error:', err);
     return res.status(500).json({ error: 'Server error while fetching complaints.' });
@@ -105,7 +155,22 @@ const getComplaintById = async (req, res) => {
       return res.status(403).json({ error: 'Access Denied: You cannot view this complaint.' });
     }
 
-    return res.status(200).json({ id: doc.id, ...complaintData });
+    // Resolve emails
+    const customerDoc = await db.collection('users').doc(complaintData.customerId).get();
+    const customerEmail = customerDoc.exists ? customerDoc.data().email : 'Unknown Customer';
+
+    let assignedAdminEmail = null;
+    if (complaintData.assignedAdminId) {
+      const adminDoc = await db.collection('users').doc(complaintData.assignedAdminId).get();
+      assignedAdminEmail = adminDoc.exists ? adminDoc.data().email : null;
+    }
+
+    return res.status(200).json({
+      id: doc.id,
+      ...complaintData,
+      customerEmail,
+      assignedAdminEmail
+    });
   } catch (err) {
     console.error('Get Complaint By ID Error:', err);
     return res.status(500).json({ error: 'Server error while fetching complaint details.' });
@@ -116,7 +181,7 @@ const getComplaintById = async (req, res) => {
 const updateComplaintStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, comment } = req.body;
+    const { status, comment, priority } = req.body;
     const adminId = req.user.userId;
 
     if (!status || !['PENDING', 'IN_PROGRESS', 'RESOLVED'].includes(status.toUpperCase())) {
@@ -134,12 +199,18 @@ const updateComplaintStatus = async (req, res) => {
     const oldStatus = complaintData.status;
     const newStatus = status.toUpperCase();
 
-    // Update complaint record
-    await docRef.update({
+    const updates = {
       status: newStatus,
-      assignedAdminId: adminId,
+      assignedAdminId: req.body.assignedAdminId || adminId,
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
+    };
+
+    if (priority && ['LOW', 'MEDIUM', 'HIGH'].includes(priority.toUpperCase())) {
+      updates.priority = priority.toUpperCase();
+    }
+
+    // Update complaint record
+    await docRef.update(updates);
 
     // Write transition to logs collection
     await db.collection('complaintLogs').add({
@@ -187,21 +258,90 @@ const getComplaintLogs = async (req, res) => {
       .get();
 
     const logs = [];
+    const actorIds = new Set();
     logsSnapshot.forEach(doc => {
-      logs.push({ id: doc.id, ...doc.data() });
+      const data = doc.data();
+      if (data.actionBy) actorIds.add(data.actionBy);
+      logs.push({ id: doc.id, ...data });
     });
 
+    // Bulk resolve actor emails
+    const actorEmails = {};
+    if (actorIds.size > 0) {
+      const userDocs = await db.collection('users').where(admin.firestore.FieldPath.documentId(), 'in', Array.from(actorIds)).get();
+      userDocs.forEach(udoc => {
+        actorEmails[udoc.id] = udoc.data().email;
+      });
+    }
+
+    const resolvedLogs = logs.map(l => ({
+      ...l,
+      actionByEmail: actorEmails[l.actionBy] || l.actionBy
+    }));
+
     // Sort in-memory by createdAt ascending
-    logs.sort((a, b) => {
+    resolvedLogs.sort((a, b) => {
       const timeA = a.createdAt ? (a.createdAt.seconds || 0) : 0;
       const timeB = b.createdAt ? (b.createdAt.seconds || 0) : 0;
       return timeA - timeB;
     });
 
-    return res.status(200).json(logs);
+    return res.status(200).json(resolvedLogs);
   } catch (err) {
     console.error('Get Logs Error:', err);
     return res.status(500).json({ error: 'Server error while fetching logs.' });
+  }
+};
+
+// Submit feedback for a complaint (Customer only)
+const submitFeedback = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rating, comment } = req.body;
+    const customerId = req.user.userId;
+
+    if (rating === undefined || rating < 1 || rating > 5) {
+      return res.status(400).json({ error: 'Rating is required and must be between 1 and 5.' });
+    }
+
+    const docRef = db.collection('complaints').doc(id);
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      return res.status(404).json({ error: 'Complaint not found.' });
+    }
+
+    const complaintData = doc.data();
+
+    // Security check: Only the customer who raised the complaint can review it
+    if (complaintData.customerId !== customerId) {
+      return res.status(403).json({ error: 'Access Denied: You cannot submit feedback for this complaint.' });
+    }
+
+    // Update the complaint document with rating and feedback comment
+    await docRef.update({
+      rating: parseInt(rating, 10),
+      feedbackComment: (comment || '').trim(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Log the feedback action
+    await db.collection('complaintLogs').add({
+      complaintId: id,
+      actionBy: customerId,
+      oldStatus: complaintData.status,
+      newStatus: complaintData.status,
+      comment: `Customer submitted feedback. Rating: ${rating}/5. Comment: ${(comment || '').trim()}`,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    return res.status(200).json({
+      message: 'Feedback submitted successfully.'
+    });
+
+  } catch (err) {
+    console.error('Submit Feedback Error:', err);
+    return res.status(500).json({ error: 'Server error while submitting feedback.' });
   }
 };
 
@@ -210,5 +350,6 @@ module.exports = {
   getComplaints,
   getComplaintById,
   updateComplaintStatus,
-  getComplaintLogs
+  getComplaintLogs,
+  submitFeedback
 };

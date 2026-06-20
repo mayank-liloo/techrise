@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.techrise.util.SecurityUtils
 import com.techrise.presentation.navigation.TechRiseNavGraph
+import com.techrise.presentation.theme.SecureCRMTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -69,7 +70,7 @@ class MainActivity : ComponentActivity() {
 
         // 4. Load Compose UI (Secure Main View)
         setContent {
-            MaterialTheme {
+            SecureCRMTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

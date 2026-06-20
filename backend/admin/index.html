@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureCRM Employee Portal</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-mode">
+    <!-- Toast Notification Container -->
+    <div id="toast-container"></div>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-container" class="auth-wrapper">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="logo-icon">★</div>
+                <h1>Tech Rise Portal</h1>
+                <p>Employee & Admin Dashboard</p>
+            </div>
+            <form id="login-form">
+                <div class="input-group">
+                    <label for="login-email">Email Address</label>
+                    <input type="email" id="login-email" required placeholder="name@techrise.com">
+                </div>
+                <div class="input-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required placeholder="••••••••">
+                </div>
+                <button type="submit" id="btn-login" class="btn-primary">
+                    <span>Sign In</span>
+                    <div class="spinner hidden"></div>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD SCREEN (Hidden by default) -->
+    <div id="dashboard-container" class="app-wrapper hidden">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <span class="sidebar-logo-icon">★</span>
+                <h2>Tech Rise</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-tab="tab-complaints">
+                    <span class="icon">📋</span> Complaints Manager
+                </button>
+                <button class="nav-item" data-tab="tab-news">
+                    <span class="icon">📰</span> Publish News Feed
+                </button>
+                <button class="nav-item" data-tab="tab-employee">
+                    <span class="icon">👤</span> Add Employee
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <p class="user-label">Logged in as</p>
+                    <p id="user-email" class="user-value">employee@techrise.com</p>
+                </div>
+                <button id="btn-logout" class="btn-secondary">Log Out</button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="content-header">
+                <div class="header-title">
+                    <h1 id="tab-title">Complaints Manager</h1>
+                    <p id="tab-subtitle">Track, assign, and resolve customer complaints</p>
+                </div>
+            </header>
+
+            <!-- COMPLAINTS TAB -->
+            <section id="tab-complaints" class="tab-content">
+                <!-- Stats Summary -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon pending-icon">⏳</div>
+                        <div class="stat-info">
+                            <h3 id="stat-pending">0</h3>
+                            <p>Pending Complaints</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon progress-icon">⚙️</div>
+                        <div class="stat-info">
+                            <h3 id="stat-progress">0</h3>
+                            <p>In Progress</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon resolved-icon">✅</div>
+                        <div class="stat-info">
+                            <h3 id="stat-resolved">0</h3>
+                            <p>Resolved Cases</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters & Actions -->
+                <div class="filter-bar">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="search-complaints" placeholder="Search by title, description or email...">
+                    </div>
+                    <div class="filter-group">
+                        <label for="filter-status">Status</label>
+                        <select id="filter-status">
+                            <option value="ALL">All Statuses</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="IN_PROGRESS">In Progress</option>
+                            <option value="RESOLVED">Resolved</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filter-priority">Priority</label>
+                        <select id="filter-priority">
+                            <option value="ALL">All Priorities</option>
+                            <option value="HIGH">High</option>
+                            <option value="MEDIUM">Medium</option>
+                            <option value="LOW">Low</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Complaints List -->
+                <div class="complaints-list-wrapper">
+                    <div class="loading-overlay hidden" id="complaints-loader">
+                        <div class="spinner"></div>
+                        <p>Loading complaints...</p>
+                    </div>
+                    <div id="complaints-list" class="complaints-grid">
+                        <!-- Dynamic complaint cards will go here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- NEWS TAB -->
+            <section id="tab-news" class="tab-content hidden">
+                <div class="news-tab-container">
+                    <div class="news-form-card">
+                        <h2>Publish an Announcement</h2>
+                        <p>Write an update that will appear instantly on all customer home screens.</p>
+                        <form id="news-form">
+                            <div class="input-group">
+                                <label for="news-title">Announcement Title</label>
+                                <input type="text" id="news-title" required placeholder="e.g. Server Maintenance Notice">
+                            </div>
+                            <div class="input-group">
+                                <label for="news-content">Details / Body Text</label>
+                                <textarea id="news-content" required rows="6" placeholder="Provide full details of the announcement..."></textarea>
+                            </div>
+                            <button type="submit" id="btn-publish-news" class="btn-primary">Publish Announcement</button>
+                        </form>
+                    </div>
+
+                    <div class="news-history-card">
+                        <h2>Recently Published</h2>
+                        <div id="news-list" class="news-history-list">
+                            <!-- Dynamic news will go here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- EMPLOYEE TAB -->
+            <section id="tab-employee" class="tab-content hidden">
+                <div class="news-tab-container">
+                    <div class="news-form-card">
+                        <h2>Register New Employee Account</h2>
+                        <p>Create a secure staff login that grants access to this PC Employee Portal.</p>
+                        <form id="employee-register-form">
+                            <div class="input-group">
+                                <label for="emp-email">Employee Email Address</label>
+                                <input type="email" id="emp-email" required placeholder="staffname@techrise.com">
+                            </div>
+                            <div class="input-group">
+                                <label for="emp-password">Temporary Password</label>
+                                <input type="password" id="emp-password" required placeholder="••••••••">
+                            </div>
+                            <div class="input-group">
+                                <label for="emp-mobile">Mobile Number</label>
+                                <input type="text" id="emp-mobile" required placeholder="e.g. +1234567890">
+                            </div>
+                            <button type="submit" id="btn-register-employee" class="btn-primary">Create Employee Account</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

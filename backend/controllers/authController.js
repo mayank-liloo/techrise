@@ -5,7 +5,7 @@ const { admin, db } = require('../config/firebase');
 // User Registration
 const register = async (req, res) => {
   try {
-    const { email, password, role } = req.body;
+    const { email, password, role, mobile } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
 
     // 1. Check if user already exists
@@ -18,18 +18,25 @@ const register = async (req, res) => {
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
+    // Generate clean short ID
+    const rolePrefix = role.toUpperCase() === 'ADMIN' ? 'EMP' : 'CUST';
+    const snapshot = await db.collection('users').where('role', '==', role.toUpperCase()).get();
+    const count = snapshot.size;
+    const cleanId = `${rolePrefix}-${1001 + count}`;
+
     // 3. Store new user in Firestore
-    const userRef = await db.collection('users').add({
+    await db.collection('users').doc(cleanId).set({
       email: normalizedEmail,
       passwordHash,
       role: role.toUpperCase(),
+      mobile: mobile ? mobile.trim() : '',
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
     return res.status(201).json({
       message: 'User registered successfully.',
-      userId: userRef.id,
+      userId: cleanId,
       email: normalizedEmail,
       role: role.toUpperCase()
     });
@@ -62,7 +69,16 @@ const login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
-    // 3. Generate Secure JWT Token
+    // 3. PC/Web Browser Login Restriction: Only employees (ADMIN role) can log in from desktop web browsers.
+    const userAgent = req.headers['user-agent'] || '';
+    const origin = req.headers['origin'] || '';
+    const isBrowser = req.headers['sec-ch-ua'] || origin || (userAgent.includes('Mozilla') && !userAgent.includes('Android') && !userAgent.includes('iPhone') && !userAgent.includes('iPad'));
+
+    if (isBrowser && userData.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Access denied. Customers are only permitted to log in via the mobile application.' });
+    }
+
+    // 4. Generate Secure JWT Token
     const payload = {
       userId: userDoc.id,
       email: userData.email,
@@ -89,7 +105,22 @@ const login = async (req, res) => {
   }
 };
 
+const getEmployees = async (req, res) => {
+  try {
+    const snapshot = await db.collection('users').where('role', '==', 'ADMIN').get();
+    const employees = [];
+    snapshot.forEach(doc => {
+      employees.push({ id: doc.id, email: doc.data().email });
+    });
+    return res.status(200).json(employees);
+  } catch (err) {
+    console.error('Get Employees Error:', err);
+    return res.status(500).json({ error: 'Server error while fetching employees.' });
+  }
+};
+
 module.exports = {
   register,
-  login
+  login,
+  getEmployees
 };

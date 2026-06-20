@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.techrise.data.remote.ComplaintLogResponse
 import com.techrise.data.remote.ComplaintResponse
+import com.techrise.presentation.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -46,7 +47,7 @@ fun ComplaintDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Ticket Details", fontWeight = FontWeight.Bold) },
+                title = { Text("Complaint Details", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -91,7 +92,7 @@ fun ComplaintDetailScreen(
                         // 2. Timeline Progression Section
                         item {
                             Text(
-                                text = "Ticket Timeline",
+                                text = "Complaint Timeline",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(bottom = 8.dp)
@@ -100,7 +101,7 @@ fun ComplaintDetailScreen(
 
                         if (logs.isEmpty()) {
                             item {
-                                Text("No logs registered for this ticket.", color = MaterialTheme.colorScheme.outline)
+                                Text("No logs registered for this complaint.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         } else {
                             itemsIndexed(logs) { index, log ->
@@ -218,9 +219,9 @@ fun ComplaintDetailScreen(
 @Composable
 fun ComplaintDetailsCard(complaint: ComplaintResponse) {
     val statusColor = when (complaint.status.toUpperCase()) {
-        "PENDING" -> MaterialTheme.colorScheme.error
-        "IN_PROGRESS" -> Color(0xFFE65100)
-        "RESOLVED" -> Color(0xFF2E7D32)
+        "PENDING" -> StatusPending
+        "IN_PROGRESS" -> StatusActive
+        "RESOLVED" -> StatusResolved
         else -> MaterialTheme.colorScheme.outline
     }
 
@@ -263,7 +264,7 @@ fun ComplaintDetailsCard(complaint: ComplaintResponse) {
                 text = "Description",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.outline
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -278,13 +279,14 @@ fun ComplaintDetailsCard(complaint: ComplaintResponse) {
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
-                    Text("PRIORITY", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                    Text("PRIORITY", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(complaint.priority, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("ASSIGNED STAFF", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                    Text("ASSIGNED STAFF", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    val staffText = if (!complaint.assignedAdminEmail.isNullOrBlank()) complaint.assignedAdminEmail else (complaint.assignedAdminId ?: "Unassigned")
                     Text(
-                        text = complaint.assignedAdminId ?: "Unassigned",
+                        text = staffText,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         color = if (complaint.assignedAdminId == null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
@@ -356,7 +358,7 @@ fun TimelineItem(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     val statusText = if (log.oldStatus == "NONE") {
-                        "Ticket Registered"
+                        "Complaint Registered"
                     } else {
                         "Status: ${log.oldStatus} → ${log.newStatus}"
                     }
@@ -371,7 +373,7 @@ fun TimelineItem(
                     Text(
                         text = formattedDate,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -384,9 +386,9 @@ fun TimelineItem(
                 
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Actor: ${log.actionBy}",
+                    text = "Actor: ${if (!log.actionByEmail.isNullOrBlank()) log.actionByEmail else log.actionBy}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

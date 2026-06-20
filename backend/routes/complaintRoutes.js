@@ -6,7 +6,8 @@ const {
   getComplaints, 
   getComplaintById, 
   updateComplaintStatus, 
-  getComplaintLogs 
+  getComplaintLogs,
+  submitFeedback
 } = require('../controllers/complaintController');
 
 const { authenticateToken, requireRole } = require('../middleware/authMiddleware');
@@ -25,5 +26,8 @@ router.put('/:id/status', authenticateToken, requireRole(['ADMIN']), updateCompl
 
 // 5. Get Complaint Audit Logs (Customer owner or Admin)
 router.get('/:id/logs', authenticateToken, getComplaintLogs);
+
+// 6. Submit Complaint Feedback (Customer only)
+router.post('/:id/feedback', authenticateToken, requireRole(['CUSTOMER']), submitFeedback);
 
 module.exports = router;
