@@ -26,6 +26,10 @@ import com.techrise.data.remote.ComplaintResponse
 import com.techrise.presentation.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,12 +63,27 @@ fun ComplaintDetailScreen(
             )
         }
     ) { paddingValues ->
-        Box(
+        var isRefreshing by remember { mutableStateOf(false) }
+        val coroutineScope = rememberCoroutineScope()
+
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = {
+                isRefreshing = true
+                coroutineScope.launch {
+                    viewModel.loadComplaintDetails(complaintId)
+                    delay(1000)
+                    isRefreshing = false
+                }
+            },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            when (val state = singleComplaintState) {
+            Box(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                when (val state = singleComplaintState) {
                 is SingleComplaintUiState.Loading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()

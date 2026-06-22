@@ -21,6 +21,9 @@ import com.techrise.data.remote.NewsResponse
 import com.techrise.presentation.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -84,33 +87,51 @@ fun AdminHomeScreen(
             }
         }
     ) { paddingValues ->
-        Box(
+        var isRefreshing by remember { mutableStateOf(false) }
+        val coroutineScope = rememberCoroutineScope()
+
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = {
+                isRefreshing = true
+                coroutineScope.launch {
+                    viewModel.loadAllComplaints()
+                    viewModel.loadNewsFeed()
+                    kotlinx.coroutines.delay(1000)
+                    isRefreshing = false
+                }
+            },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.background)
         ) {
-            when (selectedTab) {
-                0 -> ComplaintFeedTab(
-                    complaints = complaints,
-                    isLoading = isLoading,
-                    error = error,
-                    onComplaintClick = onComplaintClick,
-                    onRefresh = { viewModel.loadAllComplaints() }
-                )
-                1 -> PublishNewsTab(
-                    viewModel = viewModel,
-                    isLoading = isLoading,
-                    error = error
-                )
-                2 -> EscalationsTab(
-                    complaints = complaints,
-                    viewModel = viewModel,
-                    onComplaintClick = onComplaintClick,
-                    isLoading = isLoading,
-                    error = error,
-                    onRefresh = { viewModel.loadAllComplaints() }
-                )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+            ) {
+                when (selectedTab) {
+                    0 -> ComplaintFeedTab(
+                        complaints = complaints,
+                        isLoading = isLoading,
+                        error = error,
+                        onComplaintClick = onComplaintClick,
+                        onRefresh = { viewModel.loadAllComplaints() }
+                    )
+                    1 -> PublishNewsTab(
+                        viewModel = viewModel,
+                        isLoading = isLoading,
+                        error = error
+                    )
+                    2 -> EscalationsTab(
+                        complaints = complaints,
+                        viewModel = viewModel,
+                        onComplaintClick = onComplaintClick,
+                        isLoading = isLoading,
+                        error = error,
+                        onRefresh = { viewModel.loadAllComplaints() }
+                    )
+                }
             }
         }
     }

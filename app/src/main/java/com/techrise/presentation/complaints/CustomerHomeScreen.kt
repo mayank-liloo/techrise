@@ -29,6 +29,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.techrise.presentation.theme.*
 import kotlinx.coroutines.delay
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
 import android.content.Intent
 import android.net.Uri
@@ -112,12 +115,28 @@ fun CustomerHomeScreen(
             }
         }
     ) { paddingValues ->
-        Box(
+        var isRefreshing by remember { mutableStateOf(false) }
+        val coroutineScope = rememberCoroutineScope()
+
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = {
+                isRefreshing = true
+                coroutineScope.launch {
+                    viewModel.loadComplaints()
+                    viewModel.loadNewsFeed()
+                    delay(1000)
+                    isRefreshing = false
+                }
+            },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            when (currentScreen) {
+            Box(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                when (currentScreen) {
                 CustomerScreen.DASHBOARD -> DashboardContent(
                     viewModel = viewModel,
                     complaintsCount = (complaintsState as? ComplaintsUiState.Success)?.complaints?.size ?: 0,
@@ -136,6 +155,7 @@ fun CustomerHomeScreen(
                     viewModel = viewModel,
                     complaints = (complaintsState as? ComplaintsUiState.Success)?.complaints ?: emptyList()
                 )
+            }
             }
         }
     }
