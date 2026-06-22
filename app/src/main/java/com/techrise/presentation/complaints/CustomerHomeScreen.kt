@@ -32,6 +32,14 @@ import kotlinx.coroutines.delay
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.util.lerp
+import kotlin.math.absoluteValue
 import androidx.compose.ui.platform.LocalContext
 import android.content.Intent
 import android.net.Uri
@@ -165,141 +173,218 @@ data class SlideData(
     val title: String,
     val description: String,
     val background: Brush,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val imageRes: Int? = null
 )
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SlidingBanner() {
-    val slideCount = 4
-    var currentSlide by remember { mutableStateOf(0) }
-    
-    // Auto-scroll effect
-    LaunchedEffect(currentSlide) {
-        delay(4000) // Wait 4 seconds
-        currentSlide = (currentSlide + 1) % slideCount
-    }
-
     val slides = listOf(
         SlideData(
-            title = "Banner 1",
-            description = "",
+            title = "TechRise Support",
+            description = "Track issue progression in real-time.",
             background = Brush.linearGradient(listOf(Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364))),
-            icon = Icons.Default.Send
+            icon = Icons.Default.Send,
+            imageRes = null
         ),
         SlideData(
-            title = "Banner 2",
-            description = "",
+            title = "Direct Support Hotlines",
+            description = "Instant help from our representatives.",
             background = Brush.linearGradient(listOf(Color(0xFF11998E), Color(0xFF38EF7D))),
-            icon = Icons.Default.Phone
+            icon = Icons.Default.Phone,
+            imageRes = null
         ),
         SlideData(
-            title = "Banner 3",
-            description = "",
+            title = "Quality Feedback Loop",
+            description = "Help us serve you better by rating tickets.",
             background = Brush.linearGradient(listOf(Color(0xFFFC4A1A), Color(0xFFF7B733))),
-            icon = Icons.Default.Star
+            icon = Icons.Default.Star,
+            imageRes = null
         ),
         SlideData(
-            title = "Banner 4",
-            description = "",
+            title = "Immediate Updates",
+            description = "Notification center for status updates.",
             background = Brush.linearGradient(listOf(Color(0xFF141E30), Color(0xFF243B55))),
-            icon = Icons.Default.Notifications
+            icon = Icons.Default.Notifications,
+            imageRes = null
         )
     )
 
-    val currentData = slides[currentSlide]
+    val pagerState = rememberPagerState(pageCount = { slides.size })
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(150.dp)
-            .pointerInput(Unit) {
-                var totalDrag = 0f
-                detectHorizontalDragGestures(
-                    onDragStart = { totalDrag = 0f },
-                    onDragEnd = {
-                        if (totalDrag > 50f) {
-                            currentSlide = (currentSlide - 1 + slideCount) % slideCount
-                        } else if (totalDrag < -50f) {
-                            currentSlide = (currentSlide + 1) % slideCount
-                        }
-                    },
-                    onHorizontalDrag = { _, dragAmount ->
-                        totalDrag += dragAmount
-                    }
+    // Auto-scroll effect
+    LaunchedEffect(pagerState.currentPage) {
+        delay(4000)
+        val nextPage = (pagerState.currentPage + 1) % slides.size
+        pagerState.animateScrollToPage(nextPage)
+    }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "For You",
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Surface(
+                shape = RoundedCornerShape(4.dp),
+                color = Color(0xFFFFB300).copy(alpha = 0.15f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFB300)),
+                modifier = Modifier.padding(end = 4.dp)
+            ) {
+                Text(
+                    text = "UPGRADE",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = Color(0xFFFFB300),
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                 )
-            },
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Crossfade(
-                targetState = currentData,
-                animationSpec = tween(600),
-                label = "slide_transition"
-            ) { data ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(data.background)
-                        .padding(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+            }
+        }
+
+        HorizontalPager(
+            state = pagerState,
+            contentPadding = PaddingValues(horizontal = 48.dp),
+            pageSpacing = 16.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp)
+        ) { page ->
+            val data = slides[page]
+            
+            // Calculate scale and alpha based on page offset to create beautiful peeking cards
+            val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
+            val scale = lerp(
+                start = 0.85f,
+                stop = 1f,
+                fraction = 1f - pageOffset.coerceIn(0f, 1f)
+            )
+            val alpha = lerp(
+                start = 0.6f,
+                stop = 1f,
+                fraction = 1f - pageOffset.coerceIn(0f, 1f)
+            )
+
+            Card(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        this.alpha = alpha
+                    },
+                shape = RoundedCornerShape(24.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+            ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(data.background)
                     ) {
-                        Column(
+                        if (data.imageRes != null) {
+                            androidx.compose.foundation.Image(
+                                painter = androidx.compose.ui.res.painterResource(id = data.imageRes),
+                                contentDescription = null,
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+
+                        // Overlay for readability
+                        Box(
                             modifier = Modifier
-                                .weight(1f)
-                                .padding(end = 16.dp, bottom = 12.dp),
-                            verticalArrangement = Arrangement.Center
+                                .fillMaxSize()
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors = listOf(
+                                            Color.Transparent,
+                                            Color.Black.copy(alpha = 0.3f),
+                                            Color.Black.copy(alpha = 0.8f)
+                                        )
+                                    )
+                                )
+                        )
+                    }
+
+                    // Content layout inside the card
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(20.dp),
+                        verticalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
                         ) {
+                            Icon(
+                                imageVector = data.icon,
+                                contentDescription = null,
+                                tint = Color.White.copy(alpha = 0.35f),
+                                modifier = Modifier.size(36.dp)
+                            )
+                        }
+
+                        Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
                                 text = data.title,
                                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                                 color = Color.White
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = data.description,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White.copy(alpha = 0.85f),
-                                maxLines = 2
+                                color = Color.White.copy(alpha = 0.75f),
+                                maxLines = 3
                             )
-                        }
-                        
-                        // Graphic Asset Illustration
-                        Icon(
-                            imageVector = data.icon,
-                            contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.25f),
-                            modifier = Modifier
-                                .size(72.dp)
-                                .padding(end = 4.dp)
-                        )
-                    }
-                }
-            }
+                            Spacer(modifier = Modifier.height(16.dp))
 
-            // Dots Indicator
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                for (i in 0 until slideCount) {
-                    val isActive = i == currentSlide
-                    Box(
-                        modifier = Modifier
-                            .size(if (isActive) 8.dp else 6.dp)
-                            .background(
-                                color = if (isActive) Color.White else Color.White.copy(alpha = 0.4f),
-                                shape = CircleShape
-                            )
-                            .clickable { currentSlide = i }
-                    )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                IconButton(
+                                    onClick = { },
+                                    colors = IconButtonDefaults.iconButtonColors(
+                                        containerColor = Color.White.copy(alpha = 0.15f),
+                                        contentColor = Color.White
+                                    ),
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = "Add",
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+
+                                IconButton(
+                                    onClick = { },
+                                    colors = IconButtonDefaults.iconButtonColors(
+                                        containerColor = Color.White,
+                                        contentColor = Color.Black
+                                    ),
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.PlayArrow,
+                                        contentDescription = "Play",
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -381,6 +466,7 @@ fun DashboardContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
         Text(
@@ -456,7 +542,7 @@ fun DashboardContent(
             DashboardCard(
                 title = "Support",
                 subtitle = "FAQ & direct contact",
-                info = "No: 1234567890",
+                info = "No: 8062179339",
                 color = MaterialTheme.colorScheme.primaryContainer,
                 icon = Icons.Default.Phone,
                 onClick = { onNavigate(CustomerScreen.SUPPORT) },
@@ -650,7 +736,7 @@ fun SupportTabContent() {
     )
 
     val context = LocalContext.current
-    val supportPhone = "1234567890"
+    val supportPhone = "8062179339"
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -690,7 +776,7 @@ fun SupportTabContent() {
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                "1234567890",
+                                "8062179339",
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
