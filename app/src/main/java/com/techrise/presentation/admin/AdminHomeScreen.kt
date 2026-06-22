@@ -508,7 +508,7 @@ fun EscalationsTab(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
-                                    text = "Client: ${if (!complaint.customerEmail.isNullOrBlank()) complaint.customerEmail else complaint.customerId}",
+                                    text = "Client: ${com.techrise.util.formatEmailToName(complaint.customerEmail ?: complaint.customerId)}",
                                     style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onErrorContainer
@@ -558,7 +558,7 @@ fun AdminComplaintCard(
                 ComplaintStatusBadge(status = complaint.status)
             }
             Spacer(modifier = Modifier.height(2.dp))
-            val clientText = if (!complaint.customerEmail.isNullOrBlank()) complaint.customerEmail else complaint.customerId
+            val clientText = com.techrise.util.formatEmailToName(complaint.customerEmail ?: complaint.customerId)
             Text(
                 text = "Client: $clientText",
                 style = MaterialTheme.typography.bodySmall,
@@ -591,7 +591,7 @@ fun AdminComplaintCard(
                             else -> PriorityLow
                         }
                     )
-                    val staffText = if (!complaint.assignedAdminEmail.isNullOrBlank()) complaint.assignedAdminEmail else (complaint.assignedAdminId ?: "Unassigned")
+                    val staffText = com.techrise.util.formatEmailToName(complaint.assignedAdminEmail ?: complaint.assignedAdminId)
                     Text(
                         text = "Assigned: $staffText",
                         style = MaterialTheme.typography.bodySmall,

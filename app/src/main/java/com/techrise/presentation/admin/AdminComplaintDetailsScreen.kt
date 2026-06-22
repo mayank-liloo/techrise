@@ -235,7 +235,7 @@ fun AdminComplaintOverviewCard(complaint: ComplaintResponse) {
             ) {
                 Column {
                     Text("Client", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    val clientText = if (!complaint.customerEmail.isNullOrBlank()) complaint.customerEmail else complaint.customerId
+                    val clientText = com.techrise.util.formatEmailToName(complaint.customerEmail ?: complaint.customerId)
                     Text(clientText, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                 }
                 Column(horizontalAlignment = Alignment.End) {
@@ -259,7 +259,7 @@ fun AdminComplaintOverviewCard(complaint: ComplaintResponse) {
             ) {
                 Column {
                     Text("Assigned Staff", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    val staffText = if (!complaint.assignedAdminEmail.isNullOrBlank()) complaint.assignedAdminEmail else (complaint.assignedAdminId ?: "Unassigned")
+                    val staffText = com.techrise.util.formatEmailToName(complaint.assignedAdminEmail ?: complaint.assignedAdminId)
                     Text(staffText, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                 }
                 Column(horizontalAlignment = Alignment.End) {
@@ -354,7 +354,11 @@ fun AdminActionCenterCard(
 
             // Manual Employee Assignment Dropdown
             var showAssignDropdown by remember { mutableStateOf(false) }
-            val selectedEmployeeEmail = employees.firstOrNull { it.id == assignedAdminInput }?.email ?: "Unassigned (Claims Automatically)"
+            val selectedEmployeeName = if (assignedAdminInput != null) {
+                com.techrise.util.formatEmailToName(employees.firstOrNull { it.id == assignedAdminInput }?.email)
+            } else {
+                "Unassigned (Claims Automatically)"
+            }
 
             Text("Assign Staff Member:", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
             Spacer(modifier = Modifier.height(4.dp))
@@ -370,7 +374,7 @@ fun AdminActionCenterCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (assignedAdminInput != null) "$selectedEmployeeEmail ($assignedAdminInput)" else selectedEmployeeEmail,
+                            text = if (assignedAdminInput != null) "$selectedEmployeeName ($assignedAdminInput)" else selectedEmployeeName,
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Icon(Icons.Default.ArrowDropDown, contentDescription = null)
@@ -391,7 +395,7 @@ fun AdminActionCenterCard(
                     )
                     for (emp in employees) {
                         DropdownMenuItem(
-                            text = { Text("${emp.email} (${emp.id})") },
+                            text = { Text("${com.techrise.util.formatEmailToName(emp.email)} (${emp.id})") },
                             onClick = {
                                 onAssignedAdminChange(emp.id)
                                 showAssignDropdown = false
@@ -534,7 +538,7 @@ fun VisualTimelineRow(log: ComplaintLogResponse, isLast: Boolean) {
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "By User ID: ${log.actionBy}",
+                text = "By User: ${com.techrise.util.formatEmailToName(log.actionByEmail ?: log.actionBy)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

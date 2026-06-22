@@ -284,7 +284,7 @@ fun ComplaintDetailsCard(complaint: ComplaintResponse) {
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text("ASSIGNED STAFF", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    val staffText = if (!complaint.assignedAdminEmail.isNullOrBlank()) complaint.assignedAdminEmail else (complaint.assignedAdminId ?: "Unassigned")
+                    val staffText = com.techrise.util.formatEmailToName(complaint.assignedAdminEmail ?: complaint.assignedAdminId)
                     Text(
                         text = staffText,
                         style = MaterialTheme.typography.bodyMedium,
@@ -386,7 +386,7 @@ fun TimelineItem(
                 
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Actor: ${if (!log.actionByEmail.isNullOrBlank()) log.actionByEmail else log.actionBy}",
+                    text = "Actor: ${com.techrise.util.formatEmailToName(log.actionByEmail ?: log.actionBy)}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
