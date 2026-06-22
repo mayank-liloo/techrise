@@ -5,6 +5,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
@@ -31,6 +32,7 @@ fun AuthScreen(
     var isLoginTab by remember { mutableStateOf(true) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
     var mobile by remember { mutableStateOf("") }
     val role = "CUSTOMER"
 
@@ -114,11 +116,23 @@ fun AuthScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Input Fields
+            if (!isLoginTab) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Full Name") },
+                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
                 label = { Text("Email Address") },
-                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
@@ -162,13 +176,14 @@ fun AuthScreen(
                         viewModel.register(
                             email = email.trim(),
                             password = password,
+                            name = name.trim(),
                             role = role,
                             adminSecret = null,
                             mobile = mobile.trim()
                         )
                     }
                 },
-                enabled = email.isNotBlank() && password.isNotBlank() && (isLoginTab || mobile.isNotBlank()) && uiState !is AuthUiState.Loading,
+                enabled = email.isNotBlank() && password.isNotBlank() && (isLoginTab || (mobile.isNotBlank() && name.isNotBlank())) && uiState !is AuthUiState.Loading,
                 modifier = Modifier.fillMaxWidth().height(50.dp)
             ) {
                 if (uiState is AuthUiState.Loading) {

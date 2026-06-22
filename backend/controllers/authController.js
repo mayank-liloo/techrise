@@ -5,7 +5,7 @@ const { admin, db } = require('../config/firebase');
 // User Registration
 const register = async (req, res) => {
   try {
-    const { email, password, role, mobile } = req.body;
+    const { email, password, role, mobile, name } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
 
     // 1. Check if user already exists
@@ -30,6 +30,7 @@ const register = async (req, res) => {
       passwordHash,
       role: role.toUpperCase(),
       mobile: mobile ? mobile.trim() : '',
+      name: name ? name.trim() : '',
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
@@ -110,7 +111,9 @@ const getEmployees = async (req, res) => {
     const snapshot = await db.collection('users').where('role', '==', 'ADMIN').get();
     const employees = [];
     snapshot.forEach(doc => {
-      employees.push({ id: doc.id, email: doc.data().email });
+      const udata = doc.data();
+      const displayName = udata.name && udata.name.trim() ? udata.name : udata.email;
+      employees.push({ id: doc.id, email: displayName });
     });
     return res.status(200).json(employees);
   } catch (err) {

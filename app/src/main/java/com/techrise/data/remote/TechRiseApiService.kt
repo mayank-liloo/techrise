@@ -7,6 +7,7 @@ import retrofit2.http.*
 data class RegisterRequest(
     val email: String,
     val password: String,
+    val name: String,
     val role: String = "CUSTOMER",
     val adminSecret: String? = null,
     val mobile: String? = null

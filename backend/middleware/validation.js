@@ -1,5 +1,10 @@
 const validateRegistration = (req, res, next) => {
-  const { email, password, role, adminSecret } = req.body;
+  const { email, password, role, adminSecret, name } = req.body;
+
+  // Validate Name
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'Name is required.' });
+  }
 
   // Validate Email
   if (!email || !email.trim()) {

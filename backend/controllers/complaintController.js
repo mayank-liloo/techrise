@@ -106,19 +106,20 @@ const getComplaints = async (req, res) => {
       complaints.push({ id: doc.id, ...data });
     });
 
-    // Bulk resolve emails
-    const userEmails = {};
+    // Bulk resolve emails/names
+    const userNames = {};
     if (userIds.size > 0) {
       const userDocs = await db.collection('users').where(admin.firestore.FieldPath.documentId(), 'in', Array.from(userIds)).get();
       userDocs.forEach(udoc => {
-        userEmails[udoc.id] = udoc.data().email;
+        const udata = udoc.data();
+        userNames[udoc.id] = udata.name && udata.name.trim() ? udata.name : udata.email;
       });
     }
 
     const resolvedComplaints = complaints.map(c => ({
       ...c,
-      customerEmail: userEmails[c.customerId] || 'Unknown Customer',
-      assignedAdminEmail: userEmails[c.assignedAdminId] || (c.assignedAdminId ? 'Unknown Staff' : null)
+      customerEmail: userNames[c.customerId] || 'Unknown Customer',
+      assignedAdminEmail: userNames[c.assignedAdminId] || (c.assignedAdminId ? 'Unknown Staff' : null)
     }));
 
     // Sort in-memory by createdAt descending
@@ -155,14 +156,18 @@ const getComplaintById = async (req, res) => {
       return res.status(403).json({ error: 'Access Denied: You cannot view this complaint.' });
     }
 
-    // Resolve emails
+    // Resolve emails/names
     const customerDoc = await db.collection('users').doc(complaintData.customerId).get();
-    const customerEmail = customerDoc.exists ? customerDoc.data().email : 'Unknown Customer';
+    const customerEmail = customerDoc.exists 
+      ? (customerDoc.data().name && customerDoc.data().name.trim() ? customerDoc.data().name : customerDoc.data().email)
+      : 'Unknown Customer';
 
     let assignedAdminEmail = null;
     if (complaintData.assignedAdminId) {
       const adminDoc = await db.collection('users').doc(complaintData.assignedAdminId).get();
-      assignedAdminEmail = adminDoc.exists ? adminDoc.data().email : null;
+      assignedAdminEmail = adminDoc.exists 
+        ? (adminDoc.data().name && adminDoc.data().name.trim() ? adminDoc.data().name : adminDoc.data().email)
+        : null;
     }
 
     return res.status(200).json({
@@ -265,18 +270,19 @@ const getComplaintLogs = async (req, res) => {
       logs.push({ id: doc.id, ...data });
     });
 
-    // Bulk resolve actor emails
-    const actorEmails = {};
+    // Bulk resolve actor emails/names
+    const actorNames = {};
     if (actorIds.size > 0) {
       const userDocs = await db.collection('users').where(admin.firestore.FieldPath.documentId(), 'in', Array.from(actorIds)).get();
       userDocs.forEach(udoc => {
-        actorEmails[udoc.id] = udoc.data().email;
+        const udata = udoc.data();
+        actorNames[udoc.id] = udata.name && udata.name.trim() ? udata.name : udata.email;
       });
     }
 
     const resolvedLogs = logs.map(l => ({
       ...l,
-      actionByEmail: actorEmails[l.actionBy] || l.actionBy
+      actionByEmail: actorNames[l.actionBy] || l.actionBy
     }));
 
     // Sort in-memory by createdAt ascending
