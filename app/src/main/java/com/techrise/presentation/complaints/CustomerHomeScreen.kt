@@ -227,52 +227,25 @@ fun SlidingBanner() {
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "For You",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Surface(
-                shape = RoundedCornerShape(4.dp),
-                color = Color(0xFFFFB300).copy(alpha = 0.15f),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFB300)),
-                modifier = Modifier.padding(end = 4.dp)
-            ) {
-                Text(
-                    text = "UPGRADE",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = Color(0xFFFFB300),
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-            }
-        }
-
         HorizontalPager(
             state = pagerState,
-            contentPadding = PaddingValues(horizontal = 24.dp),
-            pageSpacing = 12.dp,
+            contentPadding = PaddingValues(horizontal = 48.dp),
+            pageSpacing = 16.dp,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(220.dp)
+                .height(300.dp)
         ) { page ->
             val data = slides[page]
             
             // Calculate scale and alpha based on page offset to create beautiful peeking cards
             val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
             val scale = lerp(
-                start = 0.9f,
+                start = 0.85f,
                 stop = 1f,
                 fraction = 1f - pageOffset.coerceIn(0f, 1f)
             )
             val alpha = lerp(
-                start = 0.7f,
+                start = 0.6f,
                 stop = 1f,
                 fraction = 1f - pageOffset.coerceIn(0f, 1f)
             )
