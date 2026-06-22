@@ -782,7 +782,7 @@ fun TrackerTabContent(
                     Text(
                         "No complaints found. Tap 'New Complaint' to submit one.",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.outline
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             } else {
