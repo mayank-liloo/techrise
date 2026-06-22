@@ -182,29 +182,29 @@ data class SlideData(
 fun SlidingBanner() {
     val slides = listOf(
         SlideData(
-            title = "TechRise Support",
-            description = "Track issue progression in real-time.",
+            title = "Banner 1",
+            description = "",
             background = Brush.linearGradient(listOf(Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364))),
             icon = Icons.Default.Send,
             imageRes = null
         ),
         SlideData(
-            title = "Direct Support Hotlines",
-            description = "Instant help from our representatives.",
+            title = "Banner 2",
+            description = "",
             background = Brush.linearGradient(listOf(Color(0xFF11998E), Color(0xFF38EF7D))),
             icon = Icons.Default.Phone,
             imageRes = null
         ),
         SlideData(
-            title = "Quality Feedback Loop",
-            description = "Help us serve you better by rating tickets.",
+            title = "Banner 3",
+            description = "",
             background = Brush.linearGradient(listOf(Color(0xFFFC4A1A), Color(0xFFF7B733))),
             icon = Icons.Default.Star,
             imageRes = null
         ),
         SlideData(
-            title = "Immediate Updates",
-            description = "Notification center for status updates.",
+            title = "Banner 4",
+            description = "",
             background = Brush.linearGradient(listOf(Color(0xFF141E30), Color(0xFF243B55))),
             icon = Icons.Default.Notifications,
             imageRes = null
@@ -213,11 +213,17 @@ fun SlidingBanner() {
 
     val pagerState = rememberPagerState(pageCount = { slides.size })
 
-    // Auto-scroll effect
-    LaunchedEffect(pagerState.currentPage) {
-        delay(4000)
-        val nextPage = (pagerState.currentPage + 1) % slides.size
-        pagerState.animateScrollToPage(nextPage)
+    // Auto-scroll effect that pauses when manual swipe is in progress
+    LaunchedEffect(pagerState.isScrollInProgress) {
+        if (!pagerState.isScrollInProgress) {
+            while (true) {
+                delay(4000)
+                if (pagerState.pageCount > 0) {
+                    val nextPage = (pagerState.currentPage + 1) % pagerState.pageCount
+                    pagerState.animateScrollToPage(nextPage)
+                }
+            }
+        }
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -250,23 +256,23 @@ fun SlidingBanner() {
 
         HorizontalPager(
             state = pagerState,
-            contentPadding = PaddingValues(horizontal = 48.dp),
-            pageSpacing = 16.dp,
+            contentPadding = PaddingValues(horizontal = 24.dp),
+            pageSpacing = 12.dp,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(300.dp)
+                .height(220.dp)
         ) { page ->
             val data = slides[page]
             
             // Calculate scale and alpha based on page offset to create beautiful peeking cards
             val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
             val scale = lerp(
-                start = 0.85f,
+                start = 0.9f,
                 stop = 1f,
                 fraction = 1f - pageOffset.coerceIn(0f, 1f)
             )
             val alpha = lerp(
-                start = 0.6f,
+                start = 0.7f,
                 stop = 1f,
                 fraction = 1f - pageOffset.coerceIn(0f, 1f)
             )
@@ -280,7 +286,7 @@ fun SlidingBanner() {
                         scaleY = scale
                         this.alpha = alpha
                     },
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(20.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
@@ -318,7 +324,7 @@ fun SlidingBanner() {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(20.dp),
+                            .padding(16.dp),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
                         Row(
@@ -329,7 +335,7 @@ fun SlidingBanner() {
                                 imageVector = data.icon,
                                 contentDescription = null,
                                 tint = Color.White.copy(alpha = 0.35f),
-                                modifier = Modifier.size(36.dp)
+                                modifier = Modifier.size(32.dp)
                             )
                         }
 
@@ -339,50 +345,13 @@ fun SlidingBanner() {
                                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                                 color = Color.White
                             )
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = data.description,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Color.White.copy(alpha = 0.75f),
-                                maxLines = 3
+                                maxLines = 2
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                IconButton(
-                                    onClick = { },
-                                    colors = IconButtonDefaults.iconButtonColors(
-                                        containerColor = Color.White.copy(alpha = 0.15f),
-                                        contentColor = Color.White
-                                    ),
-                                    modifier = Modifier.size(36.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Add,
-                                        contentDescription = "Add",
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-
-                                IconButton(
-                                    onClick = { },
-                                    colors = IconButtonDefaults.iconButtonColors(
-                                        containerColor = Color.White,
-                                        contentColor = Color.Black
-                                    ),
-                                    modifier = Modifier.size(36.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.PlayArrow,
-                                        contentDescription = "Play",
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                            }
                         }
                     }
                 }
