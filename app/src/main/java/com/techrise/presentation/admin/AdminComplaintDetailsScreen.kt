@@ -211,6 +211,7 @@ fun AdminComplaintDetailsScreen(
         }
     }
 }
+}
 
 @Composable
 fun AdminComplaintOverviewCard(complaint: ComplaintResponse) {
@@ -580,4 +581,4 @@ fun VisualTimelineRow(log: ComplaintLogResponse, isLast: Boolean) {
             )
         }
     }
-}
+}}

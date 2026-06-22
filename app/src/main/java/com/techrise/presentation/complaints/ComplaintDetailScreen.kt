@@ -234,6 +234,7 @@ fun ComplaintDetailScreen(
         }
     }
 }
+}
 
 @Composable
 fun ComplaintDetailsCard(complaint: ComplaintResponse) {
