@@ -96,7 +96,7 @@ fun AdminHomeScreen(
                 isRefreshing = true
                 coroutineScope.launch {
                     viewModel.loadAllComplaints()
-                    viewModel.loadNewsFeed()
+                    viewModel.loadNewsList()
                     kotlinx.coroutines.delay(1000)
                     isRefreshing = false
                 }

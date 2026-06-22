@@ -581,4 +581,4 @@ fun VisualTimelineRow(log: ComplaintLogResponse, isLast: Boolean) {
             )
         }
     }
-}}
+}
