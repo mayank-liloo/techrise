@@ -38,7 +38,8 @@ data class LoginResponse(
 data class CreateComplaintRequest(
     val title: String,
     val description: String,
-    val priority: String
+    val priority: String,
+    val imageBase64: String? = null
 )
 
 data class CreateComplaintResponse(
@@ -63,6 +64,7 @@ data class ComplaintResponse(
     val assignedAdminEmail: String?,
     val rating: Int?,
     val feedbackComment: String?,
+    val imageBase64: String?,
     val createdAt: FirestoreTimestamp?,
     val updatedAt: FirestoreTimestamp?
 )

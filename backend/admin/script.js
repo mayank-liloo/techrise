@@ -315,6 +315,14 @@ function renderComplaints() {
             
             <p class="complaint-desc">${escapeHtml(c.description)}</p>
             
+            ${c.imageBase64 ? `
+                <div class="complaint-image-attachment" style="margin-top: 12px; margin-bottom: 12px; display: flex; justify-content: flex-start;">
+                    <a href="${c.imageBase64}" target="_blank" title="Click to view full size">
+                        <img src="${c.imageBase64}" alt="Complaint Attachment" style="max-width: 100%; max-height: 250px; border-radius: 8px; border: 1px solid var(--border-color); cursor: zoom-in;" />
+                    </a>
+                </div>
+            ` : ''}
+            
             <div class="metadata-list">
                 <div class="meta-item">
                     <span class="meta-label">Customer:</span>

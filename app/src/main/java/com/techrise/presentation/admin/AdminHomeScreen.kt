@@ -24,6 +24,11 @@ import java.util.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import android.graphics.BitmapFactory
+import android.util.Base64
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -593,6 +598,19 @@ fun AdminComplaintCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2
             )
+            if (!complaint.imageBase64.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Base64Image(
+                    base64String = complaint.imageBase64,
+                    contentDescription = "Complaint Preview Attachment",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentScale = ContentScale.Crop
+                )
+            }
             if (complaint.status.uppercase() == "RESOLVED" && complaint.rating != null && complaint.rating > 0) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Surface(
@@ -695,6 +713,31 @@ fun ComplaintStatusBadge(status: String) {
             fontWeight = FontWeight.Bold,
             color = color,
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+        )
+    }
+}
+
+@Composable
+fun Base64Image(base64String: String, contentDescription: String?, modifier: Modifier = Modifier, contentScale: ContentScale = ContentScale.Fit) {
+    val cleanBase64 = if (base64String.contains(",")) {
+        base64String.substringAfter(",")
+    } else {
+        base64String
+    }
+    val imageBytes = try {
+        Base64.decode(cleanBase64, Base64.DEFAULT)
+    } catch (e: Exception) {
+        null
+    }
+    val bitmap = imageBytes?.let {
+        BitmapFactory.decodeByteArray(it, 0, it.size)
+    }
+    if (bitmap != null) {
+        Image(
+            bitmap = bitmap.asImageBitmap(),
+            contentDescription = contentDescription,
+            modifier = modifier,
+            contentScale = contentScale
         )
     }
 }

@@ -190,7 +190,22 @@ fun CreateComplaintScreen(
                     } else {
                         description
                     }
-                    viewModel.createComplaint(title.trim(), finalDescription.trim(), "MEDIUM")
+                    val base64Str = imageBitmap?.let { bitmap ->
+                        val outputStream = java.io.ByteArrayOutputStream()
+                        val maxDimension = 600
+                        val scaledBitmap = if (bitmap.width > maxDimension || bitmap.height > maxDimension) {
+                            val aspectRatio = bitmap.width.toFloat() / bitmap.height.toFloat()
+                            val width = if (aspectRatio > 1) maxDimension else (maxDimension * aspectRatio).toInt()
+                            val height = if (aspectRatio > 1) (maxDimension / aspectRatio).toInt() else maxDimension
+                            Bitmap.createScaledBitmap(bitmap, width, height, true)
+                        } else {
+                            bitmap
+                        }
+                        scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 70, outputStream)
+                        val byteArray = outputStream.toByteArray()
+                        "data:image/jpeg;base64," + android.util.Base64.encodeToString(byteArray, android.util.Base64.NO_WRAP)
+                    }
+                    viewModel.createComplaint(title.trim(), finalDescription.trim(), "MEDIUM", base64Str)
                 },
                 enabled = title.isNotBlank() && description.isNotBlank() && createState !is CreateComplaintUiState.Loading,
                 modifier = Modifier.fillMaxWidth().height(50.dp)

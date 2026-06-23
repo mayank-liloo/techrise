@@ -3,7 +3,7 @@ const { admin, db } = require('../config/firebase');
 // 1. Create a new complaint (Customers only)
 const createComplaint = async (req, res) => {
   try {
-    const { title, description, priority } = req.body;
+    const { title, description, priority, imageBase64 } = req.body;
     const customerId = req.user.userId;
 
     if (!title || !title.trim() || !description || !description.trim()) {
@@ -28,6 +28,7 @@ const createComplaint = async (req, res) => {
       priority: selectedPriority,
       customerId: customerId,
       assignedAdminId: null,
+      imageBase64: imageBase64 || null,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };

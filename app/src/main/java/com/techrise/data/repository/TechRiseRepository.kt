@@ -45,10 +45,10 @@ class TechRiseRepository @Inject constructor(
 
     // --- Complaints ---
 
-    suspend fun createComplaint(title: String, description: String, priority: String): Result<CreateComplaintResponse> = runCatching {
+    suspend fun createComplaint(title: String, description: String, priority: String, imageBase64: String? = null): Result<CreateComplaintResponse> = runCatching {
         apiService.createComplaint(
             token = getAuthHeader(),
-            request = CreateComplaintRequest(title, description, priority)
+            request = CreateComplaintRequest(title, description, priority, imageBase64)
         )
     }
 

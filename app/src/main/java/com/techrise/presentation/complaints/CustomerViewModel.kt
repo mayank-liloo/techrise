@@ -89,10 +89,10 @@ class CustomerViewModel @Inject constructor(
         }
     }
 
-    fun createComplaint(title: String, description: String, priority: String) {
+    fun createComplaint(title: String, description: String, priority: String, imageBase64: String? = null) {
         _createComplaintState.value = CreateComplaintUiState.Loading
         viewModelScope.launch {
-            repository.createComplaint(title, description, priority)
+            repository.createComplaint(title, description, priority, imageBase64)
                 .onSuccess {
                     _createComplaintState.value = CreateComplaintUiState.Success
                     loadComplaints()
