@@ -1,0 +1,10 @@
+{
+  "name": "secure-crm-root",
+  "version": "1.0.0",
+  "description": "Secure CRM root redirect for Render hosting",
+  "scripts": {
+    "install": "cd backend && npm install",
+    "build": "cd backend && npm install",
+    "start": "cd backend && npm start"
+  }
+}
