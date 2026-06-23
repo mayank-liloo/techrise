@@ -214,10 +214,10 @@ fun SlidingBanner() {
     val pagerState = rememberPagerState(pageCount = { slides.size })
 
     // Auto-scroll effect that pauses when manual swipe is in progress
-    LaunchedEffect(pagerState.isScrollInProgress) {
-        if (!pagerState.isScrollInProgress) {
-            while (true) {
-                delay(4000)
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(4000)
+            if (!pagerState.isScrollInProgress) {
                 if (pagerState.pageCount > 0) {
                     val nextPage = (pagerState.currentPage + 1) % pagerState.pageCount
                     pagerState.animateScrollToPage(nextPage)
@@ -503,10 +503,9 @@ fun FeedbackScreenContent(
     complaints: List<ComplaintResponse>
 ) {
     val context = LocalContext.current
-    var generalRating by remember { mutableStateOf(0) }
-    var comment by remember { mutableStateOf("") }
     var selectedComplaintId by remember { mutableStateOf<String?>(null) }
-    var complaintRating by remember { mutableStateOf(0) }
+    var ratingInput by remember { mutableStateOf(0) }
+    var commentInput by remember { mutableStateOf("") }
 
     val resolvedComplaints = complaints.filter { it.status == "RESOLVED" }
 
@@ -518,87 +517,178 @@ fun FeedbackScreenContent(
     ) {
         item {
             Text(
-                "Rate our overall service",
+                text = "Feedback Center",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
-            StarRating(rating = generalRating, onRatingSelected = { generalRating = it })
+            Text(
+                text = "Help us improve our service by rating your resolved complaints.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
 
-        if (resolvedComplaints.isNotEmpty()) {
+        if (resolvedComplaints.isEmpty()) {
             item {
-                Text(
-                    "Rate specific resolved complaints",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No resolved complaints available to rate yet.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
-
+        } else {
             items(resolvedComplaints) { complaint ->
+                val hasFeedback = complaint.rating != null && complaint.rating > 0
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = if (selectedComplaintId == complaint.id) 
+                        containerColor = if (hasFeedback) 
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        else if (selectedComplaintId == complaint.id) 
                             MaterialTheme.colorScheme.primaryContainer 
                         else MaterialTheme.colorScheme.surfaceVariant
-                    ),
-                    onClick = { 
-                        selectedComplaintId = complaint.id 
-                    }
+                    )
                 ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(complaint.title, fontWeight = FontWeight.Bold)
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = complaint.title, 
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.weight(1f)
+                            )
+                            if (hasFeedback) {
+                                Surface(
+                                    color = Color(0xFF2E7D32).copy(alpha = 0.15f),
+                                    shape = RoundedCornerShape(4.dp)
+                                ) {
+                                    Text(
+                                        text = "Submitted",
+                                        color = Color(0xFF2E7D32),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+                        }
+
                         val resolvedDateStr = if (complaint.updatedAt != null) {
                             val date = Date(complaint.updatedAt._seconds * 1000)
                             SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()).format(date)
                         } else {
                             "Just now"
                         }
-                        Text("Resolved on: $resolvedDateStr", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        if (selectedComplaintId == complaint.id) {
-                            StarRating(rating = complaintRating, onRatingSelected = { complaintRating = it })
+                        Text(
+                            text = "Resolved on: $resolvedDateStr", 
+                            fontSize = 12.sp, 
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+
+                        if (hasFeedback) {
+                            Divider(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f),
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+                            Text(
+                                text = "Your Rating:",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            StarRating(
+                                rating = complaint.rating ?: 0,
+                                onRatingSelected = {} // Read-only
+                            )
+                            if (!complaint.feedbackComment.isNullOrBlank()) {
+                                Text(
+                                    text = "Your Comment:",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                                Text(
+                                    text = "\"${complaint.feedbackComment}\"",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(start = 4.dp, top = 2.dp)
+                                )
+                            }
+                        } else {
+                            if (selectedComplaintId == complaint.id) {
+                                Divider(
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f),
+                                    modifier = Modifier.padding(vertical = 8.dp)
+                                )
+                                Text(
+                                    text = "Rate this support experience:",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                StarRating(
+                                    rating = ratingInput, 
+                                    onRatingSelected = { ratingInput = it }
+                                )
+                                
+                                OutlinedTextField(
+                                    value = commentInput,
+                                    onValueChange = { commentInput = it },
+                                    label = { Text("Write your review comments...") },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 8.dp),
+                                    minLines = 2
+                                )
+
+                                Button(
+                                    onClick = {
+                                        viewModel.submitFeedback(
+                                            id = complaint.id,
+                                            rating = ratingInput,
+                                            comment = commentInput
+                                        )
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            "Feedback submitted successfully!",
+                                            android.widget.Toast.LENGTH_SHORT
+                                        ).show()
+                                        selectedComplaintId = null
+                                        ratingInput = 0
+                                        commentInput = ""
+                                    },
+                                    enabled = ratingInput > 0,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 12.dp)
+                                ) {
+                                    Text("Submit Feedback")
+                                }
+                            } else {
+                                Button(
+                                    onClick = {
+                                        selectedComplaintId = complaint.id
+                                        ratingInput = 0
+                                        commentInput = ""
+                                    },
+                                    modifier = Modifier.padding(top = 8.dp)
+                                ) {
+                                    Text("Rate Support Service")
+                                }
+                            }
                         }
                     }
                 }
-            }
-        }
-
-        item {
-            OutlinedTextField(
-                value = comment,
-                onValueChange = { comment = it },
-                label = { Text("Any additional comments?") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 3
-            )
-        }
-
-        item {
-            Button(
-                onClick = {
-                    if (selectedComplaintId != null) {
-                        viewModel.submitFeedback(
-                            id = selectedComplaintId!!,
-                            rating = complaintRating,
-                            comment = comment
-                        )
-                    }
-                    android.widget.Toast.makeText(
-                        context,
-                        "Thank you for your feedback!",
-                        android.widget.Toast.LENGTH_SHORT
-                    ).show()
-
-                    // Reset form
-                    generalRating = 0
-                    comment = ""
-                    selectedComplaintId = null
-                    complaintRating = 0
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = generalRating > 0
-            ) {
-                Text("Submit Feedback")
             }
         }
     }

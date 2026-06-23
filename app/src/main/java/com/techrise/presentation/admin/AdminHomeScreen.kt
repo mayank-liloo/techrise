@@ -593,6 +593,50 @@ fun AdminComplaintCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2
             )
+            if (complaint.status.uppercase() == "RESOLVED" && complaint.rating != null && complaint.rating > 0) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Client Rating: ",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Row(modifier = Modifier.padding(horizontal = 4.dp)) {
+                                (1..5).forEach { index ->
+                                    Icon(
+                                        imageVector = Icons.Filled.Star,
+                                        contentDescription = null,
+                                        tint = if (index <= complaint.rating) Color(0xFFFFD700) else Color.LightGray,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+                            }
+                            Text(
+                                text = "(${complaint.rating}/5)",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        if (!complaint.feedbackComment.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "\"${complaint.feedbackComment}\"",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                            )
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
             Divider(color = MaterialTheme.colorScheme.surfaceVariant)
             Spacer(modifier = Modifier.height(8.dp))
