@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import com.techrise.data.remote.ComplaintLogResponse
 import com.techrise.data.remote.ComplaintResponse
 import com.techrise.presentation.theme.*
@@ -213,10 +214,29 @@ fun ComplaintDetailScreen(
 
                                             Spacer(modifier = Modifier.height(16.dp))
 
+                                            val context = LocalContext.current
                                             Button(
                                                 onClick = {
-                                                    viewModel.submitFeedback(complaint.id, feedbackRating, feedbackComment.trim())
-                                                    feedbackSubmitted = true
+                                                    viewModel.submitFeedback(
+                                                        complaint.id,
+                                                        feedbackRating,
+                                                        feedbackComment.trim()
+                                                    ) { success, error ->
+                                                        if (success) {
+                                                            feedbackSubmitted = true
+                                                            android.widget.Toast.makeText(
+                                                                context,
+                                                                "Feedback submitted successfully!",
+                                                                android.widget.Toast.LENGTH_SHORT
+                                                            ).show()
+                                                        } else {
+                                                            android.widget.Toast.makeText(
+                                                                context,
+                                                                "Failed to submit feedback: $error",
+                                                                android.widget.Toast.LENGTH_LONG
+                                                            ).show()
+                                                        }
+                                                    }
                                                 },
                                                 modifier = Modifier.fillMaxWidth()
                                             ) {

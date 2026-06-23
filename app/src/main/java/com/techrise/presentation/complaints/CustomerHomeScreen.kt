@@ -657,15 +657,24 @@ fun FeedbackScreenContent(
                                             id = complaint.id,
                                             rating = ratingInput,
                                             comment = commentInput
-                                        )
-                                        android.widget.Toast.makeText(
-                                            context,
-                                            "Feedback submitted successfully!",
-                                            android.widget.Toast.LENGTH_SHORT
-                                        ).show()
-                                        selectedComplaintId = null
-                                        ratingInput = 0
-                                        commentInput = ""
+                                        ) { success, error ->
+                                            if (success) {
+                                                android.widget.Toast.makeText(
+                                                    context,
+                                                    "Feedback submitted successfully!",
+                                                    android.widget.Toast.LENGTH_SHORT
+                                                ).show()
+                                                selectedComplaintId = null
+                                                ratingInput = 0
+                                                commentInput = ""
+                                            } else {
+                                                android.widget.Toast.makeText(
+                                                    context,
+                                                    "Failed to submit feedback: $error",
+                                                    android.widget.Toast.LENGTH_LONG
+                                                ).show()
+                                            }
+                                        }
                                     },
                                     enabled = ratingInput > 0,
                                     modifier = Modifier

@@ -105,15 +105,16 @@ class CustomerViewModel @Inject constructor(
         }
     }
 
-    fun submitFeedback(id: String, rating: Int, comment: String) {
+    fun submitFeedback(id: String, rating: Int, comment: String, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
             repository.submitFeedback(id, rating, comment)
                 .onSuccess {
                     loadComplaintDetails(id)
                     loadComplaints()
+                    onResult(true, null)
                 }
-                .onFailure {
-                    // Handle feedback submission error
+                .onFailure { exception ->
+                    onResult(false, exception.message ?: "Unknown error occurred")
                 }
         }
     }
