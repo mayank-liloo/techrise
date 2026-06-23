@@ -602,7 +602,7 @@ fun VisualTimelineRow(log: ComplaintLogResponse, isLast: Boolean) {
 }
 
 @Composable
-fun Base64Image(base64String: String, contentDescription: String?, modifier: Modifier = Modifier, contentScale: ContentScale = ContentScale.Fit) {
+private fun Base64Image(base64String: String, contentDescription: String?, modifier: Modifier = Modifier, contentScale: ContentScale = ContentScale.Fit) {
     val cleanBase64 = if (base64String.contains(",")) {
         base64String.substringAfter(",")
     } else {
