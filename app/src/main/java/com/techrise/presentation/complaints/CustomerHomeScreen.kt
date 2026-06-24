@@ -644,7 +644,7 @@ fun FeedbackScreenContent(
                                 OutlinedTextField(
                                     value = commentInput,
                                     onValueChange = { commentInput = it },
-                                    label = { Text("Write your review comments...") },
+                                    label = { Text("Write your review comment...") },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(top = 8.dp),
