@@ -78,6 +78,10 @@ class TechRiseRepository @Inject constructor(
         apiService.getNewsList(getAuthHeader())
     }
 
+    suspend fun getBanners(): Result<List<BannerResponse>> = runCatching {
+        apiService.getBanners(getAuthHeader())
+    }
+
     suspend fun createNews(title: String, content: String): Result<NewsResponse> = runCatching {
         apiService.createNews(
             token = getAuthHeader(),

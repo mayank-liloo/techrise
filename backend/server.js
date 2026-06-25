@@ -8,6 +8,7 @@ const { db } = require('./config/firebase');
 const authRoutes = require('./routes/authRoutes');
 const complaintRoutes = require('./routes/complaintRoutes');
 const newsRoutes = require('./routes/newsRoutes');
+const bannerRoutes = require('./routes/bannerRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -26,6 +27,7 @@ app.use(express.json()); // Body parser for JSON payloads
 app.use('/api/auth', authRoutes);
 app.use('/api/complaints', complaintRoutes);
 app.use('/api/news', newsRoutes);
+app.use('/api/banners', bannerRoutes);
 
 // Serve Admin Web Portal
 const path = require('path');

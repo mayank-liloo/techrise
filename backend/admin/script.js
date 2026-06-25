@@ -4,6 +4,7 @@ let userEmail = localStorage.getItem('crm_email') || null;
 let complaints = [];
 let news = [];
 let employees = [];
+let banners = [];
 
 // DOM Elements
 const loginContainer = document.getElementById('login-container');
@@ -68,6 +69,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (employeeForm) {
         employeeForm.addEventListener('submit', handleRegisterEmployee);
     }
+
+    // Banner Upload Form
+    const bannerUploadForm = document.getElementById('banner-upload-form');
+    if (bannerUploadForm) {
+        bannerUploadForm.addEventListener('submit', handleUploadBanner);
+    }
 });
 
 // Toast System
@@ -125,6 +132,7 @@ async function showDashboard() {
     await loadEmployees();
     loadComplaints();
     loadNews();
+    loadBanners();
 }
 
 async function switchTab(tabId) {
@@ -159,6 +167,10 @@ async function switchTab(tabId) {
     } else if (tabId === 'tab-employee') {
         tabTitle.textContent = "Add Employee";
         tabSubtitle.textContent = "Register a new secure staff account authorized to use this portal";
+    } else if (tabId === 'tab-banners') {
+        tabTitle.textContent = "Manage Banners";
+        tabSubtitle.textContent = "Upload or remove banner slides displayed on the mobile app home screen";
+        loadBanners();
     }
 }
 
@@ -587,5 +599,166 @@ async function handleRegisterEmployee(e) {
     } finally {
         btnRegister.disabled = false;
         btnRegister.textContent = 'Create Employee Account';
+    }
+}
+
+// Banners Manager logic
+async function loadBanners() {
+    const bannersList = document.getElementById('banners-list');
+    if (!bannersList) return;
+
+    try {
+        const response = await fetch('/api/banners', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to load banners.');
+        }
+
+        const data = await response.json();
+        banners = data;
+        renderBanners();
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+function renderBanners() {
+    const bannersList = document.getElementById('banners-list');
+    if (!bannersList) return;
+
+    bannersList.innerHTML = '';
+
+    if (banners.length === 0) {
+        bannersList.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-secondary); background: var(--bg-card); border-radius: 8px; border: 1px dashed rgba(255,255,255,0.1);">
+                <p>No active banner slides found. Upload a banner above to display it on the mobile app.</p>
+            </div>
+        `;
+        return;
+    }
+
+    banners.forEach(b => {
+        const card = document.createElement('div');
+        card.style.background = 'var(--bg-card)';
+        card.style.borderRadius = '8px';
+        card.style.overflow = 'hidden';
+        card.style.border = '1px solid rgba(255,255,255,0.05)';
+        card.style.display = 'flex';
+        card.style.flexDirection = 'column';
+        card.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+        card.style.padding = '12px';
+        card.style.gap = '8px';
+
+        card.innerHTML = `
+            <div style="position: relative; width: 100%; padding-top: 56.25%; background: #000; border-radius: 4px; overflow: hidden;">
+                <img src="${b.imageBase64}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" alt="Banner">
+            </div>
+            <div style="display: flex; flex-direction: column; justify-content: space-between; gap: 8px; flex: 1;">
+                <h4 style="margin: 0; font-size: 14px; font-weight: 600; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                    ${escapeHtml(b.title) || 'Untitled Banner'}
+                </h4>
+                <button class="btn-secondary" data-id="${b.id}" style="width: 100%; padding: 6px 12px; font-size: 12px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 4px; cursor: pointer;">
+                    Delete Banner
+                </button>
+            </div>
+        `;
+
+        bannersList.appendChild(card);
+
+        // Bind delete action
+        const delBtn = card.querySelector(`button[data-id="${b.id}"]`);
+        if (delBtn) {
+            delBtn.addEventListener('click', () => {
+                deleteBanner(b.id);
+            });
+        }
+    });
+}
+
+async function handleUploadBanner(e) {
+    e.preventDefault();
+    const titleInput = document.getElementById('banner-title');
+    const fileInput = document.getElementById('banner-file');
+    const btnUpload = document.getElementById('btn-upload-banner');
+
+    if (!fileInput.files || fileInput.files.length === 0) {
+        showToast('Please select an image file to upload.', 'error');
+        return;
+    }
+
+    const file = fileInput.files[0];
+    btnUpload.disabled = true;
+    btnUpload.textContent = 'Uploading...';
+
+    // Convert file to Base64
+    const reader = new FileReader();
+    reader.onload = async function() {
+        const base64String = reader.result;
+
+        try {
+            const response = await fetch('/api/banners', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    title: titleInput.value,
+                    imageBase64: base64String
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to upload banner.');
+            }
+
+            showToast('Banner uploaded successfully!', 'success');
+            document.getElementById('banner-upload-form').reset();
+            loadBanners();
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            btnUpload.disabled = false;
+            btnUpload.textContent = 'Upload Banner';
+        }
+    };
+
+    reader.onerror = function() {
+        showToast('Error reading image file.', 'error');
+        btnUpload.disabled = false;
+        btnUpload.textContent = 'Upload Banner';
+    };
+
+    reader.readAsDataURL(file);
+}
+
+async function deleteBanner(id) {
+    if (!confirm('Are you sure you want to delete this banner?')) return;
+
+    try {
+        const response = await fetch(`/api/banners/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to delete banner.');
+        }
+
+        showToast('Banner deleted successfully!', 'success');
+        loadBanners();
+    } catch (err) {
+        showToast(err.message, 'error');
     }
 }

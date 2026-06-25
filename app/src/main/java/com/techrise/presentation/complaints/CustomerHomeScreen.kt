@@ -45,6 +45,9 @@ import android.content.Intent
 import android.net.Uri
 import com.techrise.data.remote.ComplaintResponse
 import com.techrise.data.remote.NewsResponse
+import com.techrise.data.remote.BannerResponse
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.ImageBitmap
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -66,11 +69,13 @@ fun CustomerHomeScreen(
 ) {
     val complaintsState by viewModel.complaintsState.collectAsState()
     val newsState by viewModel.newsState.collectAsState()
+    val bannersState by viewModel.bannersState.collectAsState()
     var currentScreen by remember { mutableStateOf(CustomerScreen.DASHBOARD) }
 
     LaunchedEffect(Unit) {
         viewModel.loadComplaints()
         viewModel.loadNewsFeed()
+        viewModel.loadBanners()
     }
 
     Scaffold(
@@ -133,6 +138,7 @@ fun CustomerHomeScreen(
                 coroutineScope.launch {
                     viewModel.loadComplaints()
                     viewModel.loadNewsFeed()
+                    viewModel.loadBanners()
                     delay(1000)
                     isRefreshing = false
                 }
@@ -150,6 +156,7 @@ fun CustomerHomeScreen(
                     complaintsCount = (complaintsState as? ComplaintsUiState.Success)?.complaints?.size ?: 0,
                     activeComplaintsCount = (complaintsState as? ComplaintsUiState.Success)?.complaints?.count { it.status != "RESOLVED" } ?: 0,
                     newsCount = newsState.size,
+                    banners = bannersState,
                     onNavigate = { screen -> currentScreen = screen }
                 )
                 CustomerScreen.COMPLAINTS -> TrackerTabContent(
@@ -174,42 +181,69 @@ data class SlideData(
     val description: String,
     val background: Brush,
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
-    val imageRes: Int? = null
+    val imageRes: Int? = null,
+    val imageBitmap: ImageBitmap? = null
 )
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun SlidingBanner() {
-    val slides = listOf(
-        SlideData(
-            title = "Banner 1",
-            description = "",
-            background = Brush.linearGradient(listOf(Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364))),
-            icon = Icons.Default.Send,
-            imageRes = null
-        ),
-        SlideData(
-            title = "Banner 2",
-            description = "",
-            background = Brush.linearGradient(listOf(Color(0xFF11998E), Color(0xFF38EF7D))),
-            icon = Icons.Default.Phone,
-            imageRes = null
-        ),
-        SlideData(
-            title = "Banner 3",
-            description = "",
-            background = Brush.linearGradient(listOf(Color(0xFFFC4A1A), Color(0xFFF7B733))),
-            icon = Icons.Default.Star,
-            imageRes = null
-        ),
-        SlideData(
-            title = "Banner 4",
-            description = "",
-            background = Brush.linearGradient(listOf(Color(0xFF141E30), Color(0xFF243B55))),
-            icon = Icons.Default.Notifications,
-            imageRes = null
+fun SlidingBanner(banners: List<BannerResponse>) {
+    val slides = if (banners.isNotEmpty()) {
+        banners.map { banner ->
+            val bitmap = try {
+                val cleanBase64 = if (banner.imageBase64.contains(",")) {
+                    banner.imageBase64.substringAfter(",")
+                } else {
+                    banner.imageBase64
+                }
+                val byteArray = android.util.Base64.decode(cleanBase64, android.util.Base64.DEFAULT)
+                val androidBitmap = android.graphics.BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
+                androidBitmap?.asImageBitmap()
+            } catch (e: Exception) {
+                null
+            }
+
+            SlideData(
+                title = banner.title,
+                description = "",
+                background = Brush.linearGradient(listOf(Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364))),
+                icon = Icons.Default.Send,
+                imageRes = null,
+                imageBitmap = bitmap
+            )
+        }
+    } else {
+        listOf(
+            SlideData(
+                title = "Banner 1",
+                description = "",
+                background = Brush.linearGradient(listOf(Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364))),
+                icon = Icons.Default.Send,
+                imageRes = null
+            ),
+            SlideData(
+                title = "Banner 2",
+                description = "",
+                background = Brush.linearGradient(listOf(Color(0xFF11998E), Color(0xFF38EF7D))),
+                icon = Icons.Default.Phone,
+                imageRes = null
+            ),
+            SlideData(
+                title = "Banner 3",
+                description = "",
+                background = Brush.linearGradient(listOf(Color(0xFFFC4A1A), Color(0xFFF7B733))),
+                icon = Icons.Default.Star,
+                imageRes = null
+            ),
+            SlideData(
+                title = "Banner 4",
+                description = "",
+                background = Brush.linearGradient(listOf(Color(0xFF141E30), Color(0xFF243B55))),
+                icon = Icons.Default.Notifications,
+                imageRes = null
+            )
         )
-    )
+    }
 
     val pagerState = rememberPagerState(pageCount = { slides.size })
 
@@ -268,7 +302,14 @@ fun SlidingBanner() {
                             .fillMaxSize()
                             .background(data.background)
                     ) {
-                        if (data.imageRes != null) {
+                        if (data.imageBitmap != null) {
+                            androidx.compose.foundation.Image(
+                                bitmap = data.imageBitmap,
+                                contentDescription = null,
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else if (data.imageRes != null) {
                             androidx.compose.foundation.Image(
                                 painter = androidx.compose.ui.res.painterResource(id = data.imageRes),
                                 contentDescription = null,
@@ -399,6 +440,7 @@ fun DashboardContent(
     complaintsCount: Int,
     activeComplaintsCount: Int,
     newsCount: Int,
+    banners: List<BannerResponse>,
     onNavigate: (CustomerScreen) -> Unit
 ) {
     val username = viewModel.getEmail().substringBefore("@").replaceFirstChar {
@@ -423,7 +465,7 @@ fun DashboardContent(
             modifier = Modifier.padding(bottom = 12.dp)
         )
 
-        SlidingBanner()
+        SlidingBanner(banners = banners)
 
         Spacer(modifier = Modifier.height(16.dp))
 

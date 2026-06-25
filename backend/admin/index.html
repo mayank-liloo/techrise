@@ -53,6 +53,9 @@
                 <button class="nav-item" data-tab="tab-employee">
                     <span class="icon">👤</span> Add Employee
                 </button>
+                <button class="nav-item" data-tab="tab-banners">
+                    <span class="icon">🖼️</span> Manage Banners
+                </button>
             </nav>
             <div class="sidebar-footer">
                 <div class="user-info">
@@ -190,6 +193,35 @@
                             </div>
                             <button type="submit" id="btn-register-employee" class="btn-primary">Create Employee Account</button>
                         </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- BANNERS TAB -->
+            <section id="tab-banners" class="tab-content hidden">
+                <div class="news-tab-container">
+                    <div class="news-form-card">
+                        <h2>Upload Banner Image</h2>
+                        <p>Upload a new image to the mobile app's home screen sliding banner.</p>
+                        <form id="banner-upload-form">
+                            <div class="input-group">
+                                <label for="banner-title">Banner Title (Optional)</label>
+                                <input type="text" id="banner-title" placeholder="e.g. Summer Promo, Special Offer">
+                            </div>
+                            <div class="input-group">
+                                <label for="banner-file">Select Image File</label>
+                                <input type="file" id="banner-file" accept="image/*" required>
+                                <p style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Recommended size: Aspect ratio 2:1 or 16:9 (Landscape)</p>
+                            </div>
+                            <button type="submit" id="btn-upload-banner" class="btn-primary">Upload Banner</button>
+                        </form>
+                    </div>
+
+                    <div class="news-history-card">
+                        <h2>Active Banner Slides</h2>
+                        <div id="banners-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px;">
+                            <!-- Dynamic banners will go here -->
+                        </div>
                     </div>
                 </div>
             </section>

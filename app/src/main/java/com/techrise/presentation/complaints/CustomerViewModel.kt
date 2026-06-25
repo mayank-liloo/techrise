@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.techrise.data.remote.ComplaintLogResponse
 import com.techrise.data.remote.ComplaintResponse
 import com.techrise.data.remote.NewsResponse
+import com.techrise.data.remote.BannerResponse
 import com.techrise.data.repository.TechRiseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,6 +54,9 @@ class CustomerViewModel @Inject constructor(
 
     private val _newsState = MutableStateFlow<List<NewsResponse>>(emptyList())
     val newsState: StateFlow<List<NewsResponse>> = _newsState.asStateFlow()
+
+    private val _bannersState = MutableStateFlow<List<BannerResponse>>(emptyList())
+    val bannersState: StateFlow<List<BannerResponse>> = _bannersState.asStateFlow()
 
     fun loadComplaints() {
         _complaintsState.value = ComplaintsUiState.Loading
@@ -127,6 +131,18 @@ class CustomerViewModel @Inject constructor(
                 }
                 .onFailure {
                     // Handle news feed retrieval failure
+                }
+        }
+    }
+
+    fun loadBanners() {
+        viewModelScope.launch {
+            repository.getBanners()
+                .onSuccess { list ->
+                    _bannersState.value = list
+                }
+                .onFailure {
+                    // Fallback is handled in UI
                 }
         }
     }

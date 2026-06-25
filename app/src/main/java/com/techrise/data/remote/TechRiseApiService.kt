@@ -107,6 +107,14 @@ data class NewsResponse(
     val createdAt: FirestoreTimestamp
 )
 
+data class BannerResponse(
+    val id: String,
+    val title: String,
+    val imageBase64: String,
+    val authorId: String,
+    val createdAt: FirestoreTimestamp? = null
+)
+
 data class CreateNewsRequest(
     val title: String,
     val content: String
@@ -171,6 +179,11 @@ interface TechRiseApiService {
     suspend fun getNewsList(
         @Header("Authorization") token: String
     ): List<NewsResponse>
+
+    @GET("banners")
+    suspend fun getBanners(
+        @Header("Authorization") token: String
+    ): List<BannerResponse>
 
     @POST("news")
     suspend fun createNews(
