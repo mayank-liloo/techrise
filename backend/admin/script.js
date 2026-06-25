@@ -376,11 +376,19 @@ function renderComplaints() {
                             `).join('')}
                         </select>
                     </div>
-                    <button class="btn-update" onclick="updateStatus('${c.id}')" style="width: 100%;">Update Details</button>
+                    <button class="btn-update" data-id="${c.id}" style="width: 100%;">Update Details</button>
                 </div>
             </div>
         `;
         complaintsList.appendChild(card);
+
+        // Bind update handler programmatically to comply with CSP script-src-attr 'none'
+        const btn = card.querySelector(`button[data-id="${c.id}"]`);
+        if (btn) {
+            btn.addEventListener('click', () => {
+                updateStatus(c.id);
+            });
+        }
     });
 }
 
@@ -521,9 +529,11 @@ function escapeHtml(str) {
 // Add Employee registration helper
 async function handleRegisterEmployee(e) {
     e.preventDefault();
+    const name = document.getElementById('emp-name').value;
     const email = document.getElementById('emp-email').value;
     const password = document.getElementById('emp-password').value;
     const mobile = document.getElementById('emp-mobile').value;
+    const adminSecret = document.getElementById('emp-secret').value;
     const btnRegister = document.getElementById('btn-register-employee');
 
     btnRegister.disabled = true;
@@ -536,10 +546,12 @@ async function handleRegisterEmployee(e) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
+                name: name.trim(),
                 email: email.trim(),
                 password: password,
                 role: 'ADMIN', // Employee role
-                mobile: mobile.trim()
+                mobile: mobile.trim(),
+                adminSecret: adminSecret.trim()
             })
         });
 
