@@ -229,7 +229,7 @@ fun SlidingBanner() {
     Column(modifier = Modifier.fillMaxWidth()) {
         HorizontalPager(
             state = pagerState,
-            contentPadding = PaddingValues(horizontal = 48.dp),
+            contentPadding = PaddingValues(horizontal = 60.dp),
             pageSpacing = 16.dp,
             modifier = Modifier
                 .fillMaxWidth()

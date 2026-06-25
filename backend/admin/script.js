@@ -363,20 +363,36 @@ function renderComplaints() {
 
             <div class="card-actions">
                 <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <div class="action-form-row">
-                        <select id="status-select-${c.id}" style="flex: 1;">
-                            <option value="PENDING" ${c.status === 'PENDING' ? 'selected' : ''}>Pending</option>
-                            <option value="IN_PROGRESS" ${c.status === 'IN_PROGRESS' ? 'selected' : ''}>In Progress</option>
-                            <option value="RESOLVED" ${c.status === 'RESOLVED' ? 'selected' : ''}>Resolved</option>
-                        </select>
-                        <select id="employee-select-${c.id}" style="flex: 1;">
-                            <option value="">-- Unassigned --</option>
-                            ${employees.map(emp => `
-                                <option value="${emp.id}" ${c.assignedAdminId === emp.id ? 'selected' : ''}>${escapeHtml(emp.email)}</option>
-                            `).join('')}
-                        </select>
+                    <div class="action-form-row" style="margin-bottom: 4px;">
+                        <div style="display: flex; flex-direction: column; flex: 1; gap: 4px;">
+                            <label style="font-size: 11px; color: var(--text-secondary); font-weight: 500;">Status</label>
+                            <select id="status-select-${c.id}" style="width: 100%;">
+                                <option value="PENDING" ${c.status === 'PENDING' ? 'selected' : ''}>Pending</option>
+                                <option value="IN_PROGRESS" ${c.status === 'IN_PROGRESS' ? 'selected' : ''}>In Progress</option>
+                                <option value="RESOLVED" ${c.status === 'RESOLVED' ? 'selected' : ''}>Resolved</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; flex-direction: column; flex: 1; gap: 4px;">
+                            <label style="font-size: 11px; color: var(--text-secondary); font-weight: 500;">Priority</label>
+                            <select id="priority-select-${c.id}" style="width: 100%;">
+                                <option value="LOW" ${c.priority === 'LOW' ? 'selected' : ''}>Low</option>
+                                <option value="MEDIUM" ${c.priority === 'MEDIUM' ? 'selected' : ''}>Medium</option>
+                                <option value="HIGH" ${c.priority === 'HIGH' ? 'selected' : ''}>High</option>
+                            </select>
+                        </div>
                     </div>
-                    <button class="btn-update" data-id="${c.id}" style="width: 100%;">Update Details</button>
+                    <div class="action-form-row" style="margin-bottom: 4px;">
+                        <div style="display: flex; flex-direction: column; flex: 1; gap: 4px;">
+                            <label style="font-size: 11px; color: var(--text-secondary); font-weight: 500;">Assignee</label>
+                            <select id="employee-select-${c.id}" style="width: 100%;">
+                                <option value="">-- Unassigned --</option>
+                                ${employees.map(emp => `
+                                    <option value="${emp.id}" ${c.assignedAdminId === emp.id ? 'selected' : ''}>${escapeHtml(emp.email)}</option>
+                                `).join('')}
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn-update" data-id="${c.id}" style="width: 100%; margin-top: 4px;">Update Details</button>
                 </div>
             </div>
         `;
@@ -398,6 +414,8 @@ async function updateStatus(complaintId) {
     const newStatus = select.value;
     const empSelect = document.getElementById(`employee-select-${complaintId}`);
     const assignedAdminId = empSelect.value || null;
+    const priSelect = document.getElementById(`priority-select-${complaintId}`);
+    const newPriority = priSelect.value;
 
     try {
         const response = await fetch(`/api/complaints/${complaintId}/status`, {
@@ -408,7 +426,8 @@ async function updateStatus(complaintId) {
             },
             body: JSON.stringify({ 
                 status: newStatus,
-                assignedAdminId: assignedAdminId
+                assignedAdminId: assignedAdminId,
+                priority: newPriority
             })
         });
 
