@@ -533,7 +533,6 @@ async function handleRegisterEmployee(e) {
     const email = document.getElementById('emp-email').value;
     const password = document.getElementById('emp-password').value;
     const mobile = document.getElementById('emp-mobile').value;
-    const adminSecret = document.getElementById('emp-secret').value;
     const btnRegister = document.getElementById('btn-register-employee');
 
     btnRegister.disabled = true;
@@ -543,15 +542,15 @@ async function handleRegisterEmployee(e) {
         const response = await fetch('/api/auth/register', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
                 name: name.trim(),
                 email: email.trim(),
                 password: password,
                 role: 'ADMIN', // Employee role
-                mobile: mobile.trim(),
-                adminSecret: adminSecret.trim()
+                mobile: mobile.trim()
             })
         });
 
