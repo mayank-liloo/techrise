@@ -3,6 +3,7 @@ let token = localStorage.getItem('crm_token') || null;
 let userEmail = localStorage.getItem('crm_email') || null;
 let complaints = [];
 let news = [];
+let employees = [];
 
 // DOM Elements
 const loginContainer = document.getElementById('login-container');
@@ -99,17 +100,34 @@ function showLogin() {
     dashboardContainer.classList.add('hidden');
 }
 
-function showDashboard() {
+async function loadEmployees() {
+    try {
+        const response = await fetch('/api/auth/employees', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        if (response.ok) {
+            employees = await response.json();
+        }
+    } catch (err) {
+        console.error('Failed to load employees:', err);
+    }
+}
+
+async function showDashboard() {
     loginContainer.classList.add('hidden');
     dashboardContainer.classList.remove('hidden');
     userEmailEl.textContent = userEmail;
     
     // Load initial data
+    await loadEmployees();
     loadComplaints();
     loadNews();
 }
 
-function switchTab(tabId) {
+async function switchTab(tabId) {
     // Nav Items Active state
     navItems.forEach(btn => {
         if (btn.getAttribute('data-tab') === tabId) {
@@ -132,6 +150,7 @@ function switchTab(tabId) {
     if (tabId === 'tab-complaints') {
         tabTitle.textContent = "Complaints Manager";
         tabSubtitle.textContent = "Track, assign, and resolve customer complaints";
+        await loadEmployees();
         loadComplaints();
     } else if (tabId === 'tab-news') {
         tabTitle.textContent = "Publish News Feed";
@@ -336,16 +355,28 @@ function renderComplaints() {
                     <span class="meta-label">Registered:</span>
                     <span class="meta-value">${formattedDate}</span>
                 </div>
+                <div class="meta-item">
+                    <span class="meta-label">Assigned To:</span>
+                    <span class="meta-value">${c.assignedAdminEmail ? escapeHtml(c.assignedAdminEmail) : '<em style="color: var(--text-muted);">Unassigned</em>'}</span>
+                </div>
             </div>
 
             <div class="card-actions">
-                <div class="action-form-row">
-                    <select id="status-select-${c.id}">
-                        <option value="PENDING" ${c.status === 'PENDING' ? 'selected' : ''}>Pending</option>
-                        <option value="IN_PROGRESS" ${c.status === 'IN_PROGRESS' ? 'selected' : ''}>In Progress</option>
-                        <option value="RESOLVED" ${c.status === 'RESOLVED' ? 'selected' : ''}>Resolved</option>
-                    </select>
-                    <button class="btn-update" onclick="updateStatus('${c.id}')">Update</button>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div class="action-form-row">
+                        <select id="status-select-${c.id}" style="flex: 1;">
+                            <option value="PENDING" ${c.status === 'PENDING' ? 'selected' : ''}>Pending</option>
+                            <option value="IN_PROGRESS" ${c.status === 'IN_PROGRESS' ? 'selected' : ''}>In Progress</option>
+                            <option value="RESOLVED" ${c.status === 'RESOLVED' ? 'selected' : ''}>Resolved</option>
+                        </select>
+                        <select id="employee-select-${c.id}" style="flex: 1;">
+                            <option value="">-- Unassigned --</option>
+                            ${employees.map(emp => `
+                                <option value="${emp.id}" ${c.assignedAdminId === emp.id ? 'selected' : ''}>${escapeHtml(emp.email)}</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    <button class="btn-update" onclick="updateStatus('${c.id}')" style="width: 100%;">Update Details</button>
                 </div>
             </div>
         `;
@@ -357,6 +388,8 @@ function renderComplaints() {
 async function updateStatus(complaintId) {
     const select = document.getElementById(`status-select-${complaintId}`);
     const newStatus = select.value;
+    const empSelect = document.getElementById(`employee-select-${complaintId}`);
+    const assignedAdminId = empSelect.value || null;
 
     try {
         const response = await fetch(`/api/complaints/${complaintId}/status`, {
@@ -365,7 +398,10 @@ async function updateStatus(complaintId) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ status: newStatus })
+            body: JSON.stringify({ 
+                status: newStatus,
+                assignedAdminId: assignedAdminId
+            })
         });
 
         const data = await response.json();

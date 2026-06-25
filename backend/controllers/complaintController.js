@@ -207,7 +207,7 @@ const updateComplaintStatus = async (req, res) => {
 
     const updates = {
       status: newStatus,
-      assignedAdminId: req.body.assignedAdminId || adminId,
+      assignedAdminId: req.body.assignedAdminId !== undefined ? req.body.assignedAdminId : (complaintData.assignedAdminId || adminId),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
 
