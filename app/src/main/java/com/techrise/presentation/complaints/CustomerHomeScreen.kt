@@ -48,6 +48,7 @@ import com.techrise.data.remote.NewsResponse
 import com.techrise.data.remote.BannerResponse
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.ImageBitmap
+import com.techrise.R
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -57,6 +58,105 @@ enum class CustomerScreen {
     FEEDBACK,
     NEWS,
     SUPPORT
+}
+
+@Composable
+fun CustomHeader(
+    currentScreen: CustomerScreen,
+    email: String,
+    onBack: () -> Unit,
+    onLogout: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(130.dp)
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFFE65100),
+                        Color(0xFFFF9100)
+                    )
+                ),
+                shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)
+            )
+            .padding(horizontal = 20.dp, vertical = 16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .padding(top = 16.dp)
+        ) {
+            if (currentScreen == CustomerScreen.DASHBOARD) {
+                Text(
+                    text = "Tech Rise Portal",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White,
+                        fontSize = 24.sp
+                    )
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = email,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 13.sp
+                    )
+                )
+            } else {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    IconButton(
+                        onClick = onBack,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    val screenTitle = when (currentScreen) {
+                        CustomerScreen.COMPLAINTS -> "My Complaints"
+                        CustomerScreen.FEEDBACK -> "Feedback Center"
+                        CustomerScreen.NEWS -> "News Bulletins"
+                        CustomerScreen.SUPPORT -> "Support Center"
+                        else -> ""
+                    }
+                    Text(
+                        text = screenTitle,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White,
+                            fontSize = 22.sp
+                        )
+                    )
+                }
+            }
+        }
+
+        if (currentScreen == CustomerScreen.DASHBOARD) {
+            IconButton(
+                onClick = onLogout,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(top = 16.dp)
+                    .size(40.dp)
+                    .background(Color.White.copy(alpha = 0.2f), shape = RoundedCornerShape(12.dp))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ExitToApp,
+                    contentDescription = "Log Out",
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,40 +180,14 @@ fun CustomerHomeScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        val titleText = when (currentScreen) {
-                            CustomerScreen.DASHBOARD -> "Tech Rise Portal"
-                            CustomerScreen.COMPLAINTS -> "My Complaints"
-                            CustomerScreen.FEEDBACK -> "Feedback Center"
-                            CustomerScreen.NEWS -> "News Bulletins"
-                            CustomerScreen.SUPPORT -> "Support Center"
-                        }
-                        Text(titleText, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                        Text(viewModel.getEmail(), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                },
-                navigationIcon = {
-                    if (currentScreen != CustomerScreen.DASHBOARD) {
-                        IconButton(onClick = { currentScreen = CustomerScreen.DASHBOARD }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back to Dashboard")
-                        }
-                    }
-                },
-                actions = {
-                    if (currentScreen == CustomerScreen.DASHBOARD) {
-                        IconButton(onClick = {
-                            viewModel.logout()
-                            onLogout()
-                        }) {
-                            Icon(Icons.Default.ExitToApp, contentDescription = "Log Out")
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
-                )
+            CustomHeader(
+                currentScreen = currentScreen,
+                email = viewModel.getEmail(),
+                onBack = { currentScreen = CustomerScreen.DASHBOARD },
+                onLogout = {
+                    viewModel.logout()
+                    onLogout()
+                }
             )
         },
         floatingActionButton = {
@@ -205,8 +279,8 @@ fun SlidingBanner(banners: List<BannerResponse>) {
 
             SlideData(
                 title = banner.title,
-                description = "",
-                background = Brush.linearGradient(listOf(Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364))),
+                description = "Click to view detail",
+                background = Brush.linearGradient(listOf(Color(0xFFFF8F00), Color(0xFFFF5722))),
                 icon = Icons.Default.Send,
                 imageRes = null,
                 imageBitmap = bitmap
@@ -215,31 +289,24 @@ fun SlidingBanner(banners: List<BannerResponse>) {
     } else {
         listOf(
             SlideData(
-                title = "Banner 1",
-                description = "",
-                background = Brush.linearGradient(listOf(Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364))),
+                title = "Stay Informed.\nStay Ahead.",
+                description = "Your gateway to a better community",
+                background = Brush.linearGradient(listOf(Color(0xFFFFE57F), Color(0xFFFF8F00))),
                 icon = Icons.Default.Send,
-                imageRes = null
+                imageRes = R.drawable.default_banner_cityscape
             ),
             SlideData(
-                title = "Banner 2",
-                description = "",
-                background = Brush.linearGradient(listOf(Color(0xFF11998E), Color(0xFF38EF7D))),
+                title = "Need Technical\nSupport?",
+                description = "We are here 24/7 to solve your queries",
+                background = Brush.linearGradient(listOf(Color(0xFFFF8F00), Color(0xFFFF3D00))),
                 icon = Icons.Default.Phone,
                 imageRes = null
             ),
             SlideData(
-                title = "Banner 3",
-                description = "",
-                background = Brush.linearGradient(listOf(Color(0xFFFC4A1A), Color(0xFFF7B733))),
+                title = "Your Feedback\nMatters",
+                description = "Rate resolved tickets and help us improve",
+                background = Brush.linearGradient(listOf(Color(0xFFFFD54F), Color(0xFFFF8F00))),
                 icon = Icons.Default.Star,
-                imageRes = null
-            ),
-            SlideData(
-                title = "Banner 4",
-                description = "",
-                background = Brush.linearGradient(listOf(Color(0xFF141E30), Color(0xFF243B55))),
-                icon = Icons.Default.Notifications,
                 imageRes = null
             )
         )
@@ -250,7 +317,7 @@ fun SlidingBanner(banners: List<BannerResponse>) {
     // Auto-scroll effect that pauses when manual swipe is in progress
     LaunchedEffect(Unit) {
         while (true) {
-            delay(4000)
+            delay(5000)
             if (!pagerState.isScrollInProgress) {
                 if (pagerState.pageCount > 0) {
                     val nextPage = (pagerState.currentPage + 1) % pagerState.pageCount
@@ -263,23 +330,23 @@ fun SlidingBanner(banners: List<BannerResponse>) {
     Column(modifier = Modifier.fillMaxWidth()) {
         HorizontalPager(
             state = pagerState,
-            contentPadding = PaddingValues(horizontal = 60.dp),
-            pageSpacing = 16.dp,
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            pageSpacing = 12.dp,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(300.dp)
+                .height(200.dp)
         ) { page ->
             val data = slides[page]
             
             // Calculate scale and alpha based on page offset to create beautiful peeking cards
             val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
             val scale = lerp(
-                start = 0.85f,
+                start = 0.92f,
                 stop = 1f,
                 fraction = 1f - pageOffset.coerceIn(0f, 1f)
             )
             val alpha = lerp(
-                start = 0.6f,
+                start = 0.7f,
                 stop = 1f,
                 fraction = 1f - pageOffset.coerceIn(0f, 1f)
             )
@@ -293,8 +360,8 @@ fun SlidingBanner(banners: List<BannerResponse>) {
                         scaleY = scale
                         this.alpha = alpha
                     },
-                shape = RoundedCornerShape(20.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                shape = RoundedCornerShape(24.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     Box(
@@ -318,54 +385,104 @@ fun SlidingBanner(banners: List<BannerResponse>) {
                             )
                         }
 
-                        // Overlay for readability
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    Brush.verticalGradient(
-                                        colors = listOf(
-                                            Color.Transparent,
-                                            Color.Black.copy(alpha = 0.3f),
-                                            Color.Black.copy(alpha = 0.8f)
+                        // Soft dark overlay only for custom/non-cityscape slides to ensure readability
+                        if (data.imageRes != R.drawable.default_banner_cityscape && data.imageBitmap != null) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.verticalGradient(
+                                            colors = listOf(
+                                                Color.Transparent,
+                                                Color.Black.copy(alpha = 0.4f)
+                                            )
                                         )
                                     )
-                                )
-                        )
+                            )
+                        }
+                    }
+
+                    // Top Right Dots/Indicators inside the card overlay
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        repeat(slides.size) { index ->
+                            val isSelected = pagerState.currentPage == index
+                            val dotColor = if (data.imageRes == R.drawable.default_banner_cityscape) {
+                                if (isSelected) Color(0xFF1F2937) else Color(0xFF1F2937).copy(alpha = 0.4f)
+                            } else {
+                                if (isSelected) Color.White else Color.White.copy(alpha = 0.4f)
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .size(7.dp)
+                                    .background(
+                                        color = dotColor,
+                                        shape = CircleShape
+                                    )
+                            )
+                        }
                     }
 
                     // Content layout inside the card
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(16.dp),
+                            .padding(20.dp),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            Icon(
-                                imageVector = data.icon,
-                                contentDescription = null,
-                                tint = Color.White.copy(alpha = 0.35f),
-                                modifier = Modifier.size(32.dp)
-                            )
-                        }
+                        Spacer(modifier = Modifier.height(1.dp)) // Push content to middle/bottom
 
                         Column(modifier = Modifier.fillMaxWidth()) {
+                            val textColor = if (data.imageRes == R.drawable.default_banner_cityscape) Color(0xFF1F2937) else Color.White
                             Text(
                                 text = data.title,
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                                color = Color.White
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    lineHeight = 24.sp
+                                ),
+                                color = textColor,
+                                fontSize = 20.sp
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = data.description,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White.copy(alpha = 0.75f),
-                                maxLines = 2
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                color = if (data.imageRes == R.drawable.default_banner_cityscape) Color(0xFF4B5563) else Color.White.copy(alpha = 0.85f),
+                                fontSize = 13.sp,
+                                maxLines = 1
                             )
+                        }
+
+                        // Explore Now Button pill
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    color = if (data.imageRes == R.drawable.default_banner_cityscape) Color(0xFFE65100) else Color.White.copy(alpha = 0.25f),
+                                    shape = RoundedCornerShape(50.dp)
+                                )
+                                .padding(horizontal = 14.dp, vertical = 6.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = "Explore Now",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.ArrowForward,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(12.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -379,57 +496,125 @@ fun DashboardCard(
     title: String,
     subtitle: String,
     info: String,
-    color: Color,
+    gradient: Brush,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
+    isDarkText: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val textColor = if (isDarkText) Color(0xFF1F2937) else Color.White
+    val subTextColor = if (isDarkText) Color(0xFF4B5563) else Color.White.copy(alpha = 0.8f)
+    val iconColor = if (isDarkText) Color(0xFFFF7A00) else Color(0xFFFF7A00)
+    
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = color),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+                .background(gradient)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            Text(
-                text = info,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary
+            // Watermark icon in background bottom-right
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (isDarkText) Color(0xFFE65100).copy(alpha = 0.04f) else Color.White.copy(alpha = 0.08f),
+                modifier = Modifier
+                    .size(100.dp)
+                    .align(Alignment.BottomEnd)
+                    .offset(x = 12.dp, y = 12.dp)
             )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 16.dp, start = 16.dp, end = 16.dp, bottom = 12.dp),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Top Row: Title & Subtext + Top Right Circle Icon
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp
+                            ),
+                            color = textColor
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 11.sp,
+                                lineHeight = 14.sp
+                            ),
+                            color = subTextColor,
+                            maxLines = 2
+                        )
+                    }
+
+                    // White Circle Icon Container
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(Color.White, shape = CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = iconColor,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+
+                // Bottom pill/strip container
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = if (isDarkText) Color(0xFFFF9100).copy(alpha = 0.12f) else Color.White.copy(alpha = 0.2f),
+                            shape = RoundedCornerShape(50.dp)
+                        )
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = info,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                        color = textColor,
+                        fontSize = 12.sp
+                    )
+                    
+                    // Small White Circle Chevron Icon
+                    Box(
+                        modifier = Modifier
+                            .size(18.dp)
+                            .background(Color.White, shape = CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = if (isDarkText) Color(0xFF1F2937) else Color(0xFFFF7A00),
+                            modifier = Modifier.size(12.dp)
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -453,36 +638,71 @@ fun DashboardContent(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        Text(
-            text = "Welcome back,",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = username,
-            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
+        // Welcome Greeting with Avatar
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "Welcome back,",
+                    style = MaterialTheme.typography.bodyLarge.copy(color = Color.Gray),
+                    fontSize = 16.sp
+                )
+                Text(
+                    text = username,
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF1F2937)
+                    ),
+                    fontSize = 26.sp
+                )
+            }
+            // Rounded User Avatar Icon
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(
+                        brush = Brush.radialGradient(
+                            colors = listOf(Color(0xFFFFB300), Color(0xFFFF5722))
+                        ),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Avatar",
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
 
         SlidingBanner(banners = banners)
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // Symmetric 2x2 grid layout
-        // Row 1: Complaint & News
+        // Row 1: Complaint (Orange) & News (Yellow)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp),
+                .height(170.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             DashboardCard(
                 title = "Complaint",
-                subtitle = "Track & file",
-                info = "$activeComplaintsCount Active",
-                color = MaterialTheme.colorScheme.surfaceVariant,
+                subtitle = "Track & file complaints easily",
+                info = if (activeComplaintsCount == 1) "1 Active" else "$activeComplaintsCount Active",
+                gradient = Brush.verticalGradient(listOf(Color(0xFFFF7A00), Color(0xFFFF5252))),
                 icon = Icons.Default.List,
+                isDarkText = false,
                 onClick = { onNavigate(CustomerScreen.COMPLAINTS) },
                 modifier = Modifier
                     .weight(1f)
@@ -491,10 +711,11 @@ fun DashboardContent(
 
             DashboardCard(
                 title = "News",
-                subtitle = "Latest announcements",
-                info = "$newsCount Updates",
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                icon = Icons.Default.Info,
+                subtitle = "Latest announcements and updates",
+                info = if (newsCount == 1) "1 Update" else "$newsCount Updates",
+                gradient = Brush.verticalGradient(listOf(Color(0xFFFFD54F), Color(0xFFFFB300))),
+                icon = Icons.Default.Notifications,
+                isDarkText = true,
                 onClick = { onNavigate(CustomerScreen.NEWS) },
                 modifier = Modifier
                     .weight(1f)
@@ -504,19 +725,20 @@ fun DashboardContent(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Row 2: Feedback & Support
+        // Row 2: Feedback (Yellow) & Support (Orange)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp),
+                .height(170.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             DashboardCard(
                 title = "Feedback",
-                subtitle = "Rate resolved cases",
-                info = "Help us improve",
-                color = MaterialTheme.colorScheme.surfaceVariant,
+                subtitle = "Rate resolved cases & help us improve",
+                info = "Write a review",
+                gradient = Brush.verticalGradient(listOf(Color(0xFFFFD54F), Color(0xFFFFB300))),
                 icon = Icons.Default.Star,
+                isDarkText = true,
                 onClick = { onNavigate(CustomerScreen.FEEDBACK) },
                 modifier = Modifier
                     .weight(1f)
@@ -525,10 +747,11 @@ fun DashboardContent(
 
             DashboardCard(
                 title = "Support",
-                subtitle = "FAQ & direct contact",
-                info = "No: 8062179339",
-                color = MaterialTheme.colorScheme.primaryContainer,
+                subtitle = "FAQ & direct contact with support team",
+                info = "Get Help",
+                gradient = Brush.verticalGradient(listOf(Color(0xFFFF7A00), Color(0xFFFF5252))),
                 icon = Icons.Default.Phone,
+                isDarkText = false,
                 onClick = { onNavigate(CustomerScreen.SUPPORT) },
                 modifier = Modifier
                     .weight(1f)

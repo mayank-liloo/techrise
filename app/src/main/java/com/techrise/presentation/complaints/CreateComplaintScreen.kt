@@ -52,17 +52,49 @@ fun CreateComplaintScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Generate Complaint", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .background(
+                        brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                            colors = listOf(
+                                androidx.compose.ui.graphics.Color(0xFFE65100),
+                                androidx.compose.ui.graphics.Color(0xFFFF9100)
+                            )
+                        ),
+                        shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)
+                    )
+                    .padding(horizontal = 20.dp, vertical = 16.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(top = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    IconButton(
+                        onClick = onBack,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = androidx.compose.ui.graphics.Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
-                )
-            )
+                    Text(
+                        text = "Generate Complaint",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            color = androidx.compose.ui.graphics.Color.White,
+                            fontSize = 22.sp
+                        )
+                    )
+                }
+            }
         }
     ) { paddingValues ->
         Column(
