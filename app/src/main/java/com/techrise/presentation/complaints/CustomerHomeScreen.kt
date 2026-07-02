@@ -70,7 +70,7 @@ fun CustomHeader(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(130.dp)
+            .height(140.dp)
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
@@ -78,82 +78,103 @@ fun CustomHeader(
                         Color(0xFFFF9100)
                     )
                 ),
-                shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)
+                shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
             )
-            .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
-        Column(
+        // Decorative background circles
+        Box(
             modifier = Modifier
-                .align(Alignment.CenterStart)
-                .padding(top = 16.dp)
+                .size(150.dp)
+                .align(Alignment.TopEnd)
+                .offset(x = 30.dp, y = (-40).dp)
+                .background(Color.White.copy(alpha = 0.08f), shape = CircleShape)
+        )
+        Box(
+            modifier = Modifier
+                .size(100.dp)
+                .align(Alignment.BottomStart)
+                .offset(x = (-20).dp, y = 30.dp)
+                .background(Color.White.copy(alpha = 0.05f), shape = CircleShape)
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
-            if (currentScreen == CustomerScreen.DASHBOARD) {
-                Text(
-                    text = "Tech Rise Portal",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White,
-                        fontSize = 24.sp
-                    )
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = email,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = Color.White.copy(alpha = 0.85f),
-                        fontSize = 13.sp
-                    )
-                )
-            } else {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    IconButton(
-                        onClick = onBack,
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    val screenTitle = when (currentScreen) {
-                        CustomerScreen.COMPLAINTS -> "My Complaints"
-                        CustomerScreen.FEEDBACK -> "Feedback Center"
-                        CustomerScreen.NEWS -> "News Bulletins"
-                        CustomerScreen.SUPPORT -> "Support Center"
-                        else -> ""
-                    }
+            Column(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(top = 16.dp)
+            ) {
+                if (currentScreen == CustomerScreen.DASHBOARD) {
                     Text(
-                        text = screenTitle,
+                        text = "Tech Rise Portal",
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.ExtraBold,
                             color = Color.White,
-                            fontSize = 22.sp
+                            fontSize = 24.sp
                         )
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = email,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 13.sp
+                        )
+                    )
+                } else {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        val screenTitle = when (currentScreen) {
+                            CustomerScreen.COMPLAINTS -> "My Complaints"
+                            CustomerScreen.FEEDBACK -> "Feedback Center"
+                            CustomerScreen.NEWS -> "News Bulletins"
+                            CustomerScreen.SUPPORT -> "Support Center"
+                            else -> ""
+                        }
+                        Text(
+                            text = screenTitle,
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White,
+                                fontSize = 22.sp
+                            )
+                        )
+                    }
                 }
             }
-        }
 
-        if (currentScreen == CustomerScreen.DASHBOARD) {
-            IconButton(
-                onClick = onLogout,
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(top = 16.dp)
-                    .size(40.dp)
-                    .background(Color.White.copy(alpha = 0.2f), shape = RoundedCornerShape(12.dp))
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ExitToApp,
-                    contentDescription = "Log Out",
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
-                )
+            if (currentScreen == CustomerScreen.DASHBOARD) {
+                IconButton(
+                    onClick = onLogout,
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(top = 16.dp)
+                        .size(40.dp)
+                        .background(Color.White.copy(alpha = 0.2f), shape = RoundedCornerShape(12.dp))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ExitToApp,
+                        contentDescription = "Log Out",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
     }
@@ -179,6 +200,7 @@ fun CustomerHomeScreen(
     }
 
     Scaffold(
+        containerColor = Color(0xFFFFF8F4),
         topBar = {
             CustomHeader(
                 currentScreen = currentScreen,

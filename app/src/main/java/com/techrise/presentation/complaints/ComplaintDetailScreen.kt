@@ -56,11 +56,12 @@ fun ComplaintDetailScreen(
     }
 
     Scaffold(
+        containerColor = Color(0xFFFFF8F4),
         topBar = {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp)
+                    .height(130.dp)
                     .background(
                         brush = androidx.compose.ui.graphics.Brush.verticalGradient(
                             colors = listOf(
@@ -68,36 +69,57 @@ fun ComplaintDetailScreen(
                                 androidx.compose.ui.graphics.Color(0xFFFF9100)
                             )
                         ),
-                        shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)
+                        shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
                     )
-                    .padding(horizontal = 20.dp, vertical = 16.dp)
             ) {
-                Row(
+                // Decorative background circles
+                Box(
                     modifier = Modifier
-                        .align(Alignment.CenterStart)
-                        .padding(top = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        .size(140.dp)
+                        .align(Alignment.TopEnd)
+                        .offset(x = 30.dp, y = (-45).dp)
+                        .background(Color.White.copy(alpha = 0.08f), shape = RoundedCornerShape(70.dp))
+                )
+                Box(
+                    modifier = Modifier
+                        .size(90.dp)
+                        .align(Alignment.BottomStart)
+                        .offset(x = (-20).dp, y = 25.dp)
+                        .background(Color.White.copy(alpha = 0.05f), shape = RoundedCornerShape(45.dp))
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 20.dp, vertical = 16.dp)
                 ) {
-                    IconButton(
-                        onClick = onBack,
-                        modifier = Modifier.size(36.dp)
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .padding(top = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = androidx.compose.ui.graphics.Color.White,
-                            modifier = Modifier.size(24.dp)
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Back",
+                                tint = androidx.compose.ui.graphics.Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Text(
+                            text = "Complaint Details",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.ExtraBold,
+                                color = androidx.compose.ui.graphics.Color.White,
+                                fontSize = 22.sp
+                            )
                         )
                     }
-                    Text(
-                        text = "Complaint Details",
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            color = androidx.compose.ui.graphics.Color.White,
-                            fontSize = 22.sp
-                        )
-                    )
                 }
             }
         }
