@@ -104,4 +104,12 @@ class TechRiseRepository @Inject constructor(
     suspend fun getEmployees(): Result<List<EmployeeResponse>> = runCatching {
         apiService.getEmployees(getAuthHeader())
     }
+
+    suspend fun getProfile(): Result<UserProfileResponse> = runCatching {
+        apiService.getProfile(getAuthHeader())
+    }
+
+    suspend fun updateProfile(name: String, mobile: String): Result<UpdateProfileResponse> = runCatching {
+        apiService.updateProfile(getAuthHeader(), UpdateProfileRequest(name, mobile))
+    }
 }

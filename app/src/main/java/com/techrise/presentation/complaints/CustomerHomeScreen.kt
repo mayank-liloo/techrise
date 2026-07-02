@@ -52,12 +52,33 @@ import com.techrise.R
 import java.text.SimpleDateFormat
 import java.util.*
 
+class HeaderWaveShape : androidx.compose.ui.graphics.Shape {
+    override fun createOutline(
+        size: androidx.compose.ui.geometry.Size,
+        layoutDirection: androidx.compose.ui.unit.LayoutDirection,
+        density: androidx.compose.ui.unit.Density
+    ): androidx.compose.ui.graphics.Outline {
+        val path = androidx.compose.ui.graphics.Path().apply {
+            moveTo(0f, 0f)
+            lineTo(size.width, 0f)
+            lineTo(size.width, size.height - 20f)
+            quadraticTo(
+                size.width * 0.5f, size.height + 10f,
+                0f, size.height - 35f
+            )
+            close()
+        }
+        return androidx.compose.ui.graphics.Outline.Generic(path)
+    }
+}
+
 enum class CustomerScreen {
     DASHBOARD,
     COMPLAINTS,
     FEEDBACK,
     NEWS,
-    SUPPORT
+    SUPPORT,
+    PROFILE
 }
 
 @Composable
@@ -78,7 +99,7 @@ fun CustomHeader(
                         Color(0xFFFF9100)
                     )
                 ),
-                shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
+                shape = HeaderWaveShape()
             )
     ) {
         // Decorative background circles
@@ -145,6 +166,7 @@ fun CustomHeader(
                             CustomerScreen.FEEDBACK -> "Feedback Center"
                             CustomerScreen.NEWS -> "News Bulletins"
                             CustomerScreen.SUPPORT -> "Support Center"
+                            CustomerScreen.PROFILE -> "User Profile"
                             else -> ""
                         }
                         Text(
@@ -266,6 +288,7 @@ fun CustomerHomeScreen(
                     viewModel = viewModel,
                     complaints = (complaintsState as? ComplaintsUiState.Success)?.complaints ?: emptyList()
                 )
+                CustomerScreen.PROFILE -> ProfileScreenContent(viewModel = viewModel)
             }
             }
         }
@@ -692,7 +715,8 @@ fun DashboardContent(
                             colors = listOf(Color(0xFFFFB300), Color(0xFFFF5722))
                         ),
                         shape = CircleShape
-                    ),
+                    )
+                    .clickable { onNavigate(CustomerScreen.PROFILE) },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -1329,6 +1353,229 @@ fun ComplaintCard(complaint: ComplaintResponse, onClick: () -> Unit) {
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun ProfileScreenContent(
+    viewModel: CustomerViewModel
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val profileState by viewModel.profileState.collectAsState()
+    val updateProfileState by viewModel.updateProfileState.collectAsState()
+
+    var name by remember { mutableStateOf("") }
+    var mobile by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+
+    // Load profile once when screen is shown
+    LaunchedEffect(Unit) {
+        viewModel.loadProfile()
+    }
+
+    // React to profile details loading
+    LaunchedEffect(profileState) {
+        if (profileState is ProfileUiState.Success) {
+            val profile = (profileState as ProfileUiState.Success).profile
+            name = profile.name
+            mobile = profile.mobile
+            email = profile.email
+        }
+    }
+
+    // React to update state
+    LaunchedEffect(updateProfileState) {
+        when (updateProfileState) {
+            is UpdateProfileUiState.Success -> {
+                android.widget.Toast.makeText(context, "Profile updated successfully!", android.widget.Toast.LENGTH_SHORT).show()
+                viewModel.resetUpdateProfileState()
+            }
+            is UpdateProfileUiState.Error -> {
+                val error = (updateProfileState as UpdateProfileUiState.Error).message
+                android.widget.Toast.makeText(context, "Update failed: $error", android.widget.Toast.LENGTH_LONG).show()
+                viewModel.resetUpdateProfileState()
+            }
+            else -> {}
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        when (profileState) {
+            is ProfileUiState.Loading -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Color(0xFFFF9100)
+                )
+            }
+            is ProfileUiState.Error -> {
+                Column(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = (profileState as ProfileUiState.Error).message,
+                        color = Color.Red,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Button(
+                        onClick = { viewModel.loadProfile() },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9100))
+                    ) {
+                        Text("Retry", color = Color.White)
+                    }
+                }
+            }
+            else -> {
+                // profileState is Success or Idle (with values loaded)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(top = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Profile Icon/Avatar Card
+                    Card(
+                        modifier = Modifier.size(100.dp),
+                        shape = CircleShape,
+                        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    brush = Brush.radialGradient(
+                                        colors = listOf(Color(0xFFFFB300), Color(0xFFFF5722))
+                                    )
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(56.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Fields Container Card
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Text(
+                                text = "Personal Information",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1F2937)
+                                )
+                            )
+
+                            Divider(color = Color(0xFFF3F4F6))
+
+                            // Name Field
+                            OutlinedTextField(
+                                value = name,
+                                onValueChange = { name = it },
+                                label = { Text("Full Name") },
+                                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFFFF9100)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Color(0xFFFF9100),
+                                    focusedLabelColor = Color(0xFFFF9100)
+                                )
+                            )
+
+                            // Email Field (Read-only)
+                            OutlinedTextField(
+                                value = email,
+                                onValueChange = {},
+                                label = { Text("Email Address") },
+                                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = Color.Gray) },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = false,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    disabledBorderColor = Color(0xFFE5E7EB),
+                                    disabledLabelColor = Color.Gray,
+                                    disabledTextColor = Color.Gray
+                                )
+                            )
+
+                            // Mobile Field
+                            OutlinedTextField(
+                                value = mobile,
+                                onValueChange = { mobile = it },
+                                label = { Text("Mobile Number") },
+                                leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFFFF9100)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Color(0xFFFF9100),
+                                    focusedLabelColor = Color(0xFFFF9100)
+                                )
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Save Button
+                    Button(
+                        onClick = {
+                            if (name.isBlank()) {
+                                android.widget.Toast.makeText(context, "Name cannot be empty", android.widget.Toast.LENGTH_SHORT).show()
+                            } else {
+                                viewModel.updateProfile(name, mobile)
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(28.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFE65100),
+                            contentColor = Color.White
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
+                        enabled = updateProfileState !is UpdateProfileUiState.Loading
+                    ) {
+                        if (updateProfileState is UpdateProfileUiState.Loading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(
+                                text = "Save Changes",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                            )
+                        }
+                    }
+                }
             }
         }
     }

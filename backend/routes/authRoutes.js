@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { register, login, getEmployees } = require('../controllers/authController');
+const { register, login, getEmployees, getProfile, updateProfile } = require('../controllers/authController');
 const { validateRegistration, validateLogin } = require('../middleware/validation');
 const { authenticateToken } = require('../middleware/authMiddleware');
 
@@ -13,5 +13,9 @@ router.post('/login', validateLogin, login);
 
 // Get Employees Route (Admins only)
 router.get('/employees', authenticateToken, getEmployees);
+
+// Profile routes
+router.get('/profile', authenticateToken, getProfile);
+router.put('/profile', authenticateToken, updateProfile);
 
 module.exports = router;

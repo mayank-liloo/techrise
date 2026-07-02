@@ -208,4 +208,32 @@ interface TechRiseApiService {
     suspend fun getEmployees(
         @Header("Authorization") token: String
     ): List<EmployeeResponse>
+
+    @GET("auth/profile")
+    suspend fun getProfile(
+        @Header("Authorization") token: String
+    ): UserProfileResponse
+
+    @PUT("auth/profile")
+    suspend fun updateProfile(
+        @Header("Authorization") token: String,
+        @Body request: UpdateProfileRequest
+    ): UpdateProfileResponse
 }
+
+data class UserProfileResponse(
+    val id: String,
+    val name: String,
+    val email: String,
+    val mobile: String,
+    val role: String
+)
+
+data class UpdateProfileRequest(
+    val name: String,
+    val mobile: String
+)
+
+data class UpdateProfileResponse(
+    val message: String
+)

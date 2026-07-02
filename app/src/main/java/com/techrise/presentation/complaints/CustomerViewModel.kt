@@ -147,6 +147,47 @@ class CustomerViewModel @Inject constructor(
         }
     }
 
+    private val _profileState = MutableStateFlow<ProfileUiState>(ProfileUiState.Idle)
+    val profileState: StateFlow<ProfileUiState> = _profileState.asStateFlow()
+
+    private val _updateProfileState = MutableStateFlow<UpdateProfileUiState>(UpdateProfileUiState.Idle)
+    val updateProfileState: StateFlow<UpdateProfileUiState> = _updateProfileState.asStateFlow()
+
+    fun loadProfile() {
+        _profileState.value = ProfileUiState.Loading
+        viewModelScope.launch {
+            repository.getProfile()
+                .onSuccess { profile ->
+                    _profileState.value = ProfileUiState.Success(profile)
+                }
+                .onFailure { exception ->
+                    _profileState.value = ProfileUiState.Error(
+                        exception.message ?: "Failed to fetch profile."
+                    )
+                }
+        }
+    }
+
+    fun updateProfile(name: String, mobile: String) {
+        _updateProfileState.value = UpdateProfileUiState.Loading
+        viewModelScope.launch {
+            repository.updateProfile(name, mobile)
+                .onSuccess {
+                    _updateProfileState.value = UpdateProfileUiState.Success
+                    loadProfile()
+                }
+                .onFailure { exception ->
+                    _updateProfileState.value = UpdateProfileUiState.Error(
+                        exception.message ?: "Failed to update profile."
+                    )
+                }
+        }
+    }
+
+    fun resetUpdateProfileState() {
+        _updateProfileState.value = UpdateProfileUiState.Idle
+    }
+
     fun resetCreateState() {
         _createComplaintState.value = CreateComplaintUiState.Idle
     }
@@ -156,4 +197,18 @@ class CustomerViewModel @Inject constructor(
     fun logout() {
         repository.logout()
     }
+}
+
+sealed interface ProfileUiState {
+    object Idle : ProfileUiState
+    object Loading : ProfileUiState
+    data class Success(val profile: com.techrise.data.remote.UserProfileResponse) : ProfileUiState
+    data class Error(val message: String) : ProfileUiState
+}
+
+sealed interface UpdateProfileUiState {
+    object Idle : UpdateProfileUiState
+    object Loading : UpdateProfileUiState
+    object Success : UpdateProfileUiState
+    data class Error(val message: String) : UpdateProfileUiState
 }

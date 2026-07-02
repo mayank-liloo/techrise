@@ -298,9 +298,11 @@ function renderComplaints() {
             const title = (c.title || '').toLowerCase();
             const desc = (c.description || '').toLowerCase();
             const email = (c.customerEmail || '').toLowerCase();
+            const name = (c.customerName || '').toLowerCase();
+            const mobile = (c.customerMobile || '').toLowerCase();
             const id = (c.id || '').toLowerCase();
             
-            return title.includes(query) || desc.includes(query) || email.includes(query) || id.includes(query);
+            return title.includes(query) || desc.includes(query) || email.includes(query) || name.includes(query) || mobile.includes(query) || id.includes(query);
         }
 
         return true;
@@ -357,8 +359,14 @@ function renderComplaints() {
             <div class="metadata-list">
                 <div class="meta-item">
                     <span class="meta-label">Customer:</span>
-                    <span class="meta-value">${escapeHtml(c.customerEmail)}</span>
+                    <span class="meta-value">${escapeHtml(c.customerName || 'No Name')} (${escapeHtml(c.customerEmail)})</span>
                 </div>
+                ${c.customerMobile ? `
+                <div class="meta-item">
+                    <span class="meta-label">Customer Mobile:</span>
+                    <span class="meta-value">${escapeHtml(c.customerMobile)}</span>
+                </div>
+                ` : ''}
                 <div class="meta-item">
                     <span class="meta-label">Priority:</span>
                     <span class="badge ${priorityClass}">${c.priority}</span>

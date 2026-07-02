@@ -107,21 +107,32 @@ const getComplaints = async (req, res) => {
       complaints.push({ id: doc.id, ...data });
     });
 
-    // Bulk resolve emails/names
-    const userNames = {};
+    // Bulk resolve emails/names/mobile
+    const usersInfo = {};
     if (userIds.size > 0) {
       const userDocs = await db.collection('users').where(admin.firestore.FieldPath.documentId(), 'in', Array.from(userIds)).get();
       userDocs.forEach(udoc => {
         const udata = udoc.data();
-        userNames[udoc.id] = udata.name && udata.name.trim() ? udata.name : udata.email;
+        usersInfo[udoc.id] = {
+          name: udata.name || '',
+          email: udata.email || '',
+          mobile: udata.mobile || '',
+          role: udata.role || ''
+        };
       });
     }
 
-    const resolvedComplaints = complaints.map(c => ({
-      ...c,
-      customerEmail: userNames[c.customerId] || 'Unknown Customer',
-      assignedAdminEmail: userNames[c.assignedAdminId] || (c.assignedAdminId ? 'Unknown Staff' : null)
-    }));
+    const resolvedComplaints = complaints.map(c => {
+      const cust = usersInfo[c.customerId] || {};
+      const staff = usersInfo[c.assignedAdminId] || {};
+      return {
+        ...c,
+        customerName: cust.name || '',
+        customerEmail: cust.email || 'Unknown Customer',
+        customerMobile: cust.mobile || '',
+        assignedAdminEmail: staff.email || (c.assignedAdminId ? 'Unknown Staff' : null)
+      };
+    });
 
     // Sort in-memory by createdAt descending
     resolvedComplaints.sort((a, b) => {
@@ -157,11 +168,18 @@ const getComplaintById = async (req, res) => {
       return res.status(403).json({ error: 'Access Denied: You cannot view this complaint.' });
     }
 
-    // Resolve emails/names
+    // Resolve emails/names/mobile
     const customerDoc = await db.collection('users').doc(complaintData.customerId).get();
-    const customerEmail = customerDoc.exists 
-      ? (customerDoc.data().name && customerDoc.data().name.trim() ? customerDoc.data().name : customerDoc.data().email)
-      : 'Unknown Customer';
+    let customerName = '';
+    let customerEmail = 'Unknown Customer';
+    let customerMobile = '';
+    
+    if (customerDoc.exists) {
+      const cdata = customerDoc.data();
+      customerName = cdata.name || '';
+      customerEmail = cdata.email || '';
+      customerMobile = cdata.mobile || '';
+    }
 
     let assignedAdminEmail = null;
     if (complaintData.assignedAdminId) {
@@ -174,7 +192,9 @@ const getComplaintById = async (req, res) => {
     return res.status(200).json({
       id: doc.id,
       ...complaintData,
+      customerName,
       customerEmail,
+      customerMobile,
       assignedAdminEmail
     });
   } catch (err) {

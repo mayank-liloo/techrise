@@ -122,8 +122,52 @@ const getEmployees = async (req, res) => {
   }
 };
 
+const getProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: 'User profile not found.' });
+    }
+    const userData = userDoc.data();
+    return res.status(200).json({
+      id: userDoc.id,
+      name: userData.name || '',
+      email: userData.email,
+      mobile: userData.mobile || '',
+      role: userData.role
+    });
+  } catch (err) {
+    console.error('Get Profile Error:', err);
+    return res.status(500).json({ error: 'Server error while fetching profile.' });
+  }
+};
+
+const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { name, mobile } = req.body;
+    
+    const updateData = {};
+    if (name !== undefined) updateData.name = name.trim();
+    if (mobile !== undefined) updateData.mobile = mobile.trim();
+    updateData.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+    
+    await db.collection('users').doc(userId).update(updateData);
+    
+    return res.status(200).json({
+      message: 'Profile updated successfully.'
+    });
+  } catch (err) {
+    console.error('Update Profile Error:', err);
+    return res.status(500).json({ error: 'Server error while updating profile.' });
+  }
+};
+
 module.exports = {
   register,
   login,
-  getEmployees
+  getEmployees,
+  getProfile,
+  updateProfile
 };

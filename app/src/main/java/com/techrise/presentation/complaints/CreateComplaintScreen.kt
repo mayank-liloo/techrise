@@ -65,7 +65,7 @@ fun CreateComplaintScreen(
                                 androidx.compose.ui.graphics.Color(0xFFFF9100)
                             )
                         ),
-                        shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
+                        shape = HeaderWaveShape()
                     )
             ) {
                 // Decorative background circles
