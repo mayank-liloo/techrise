@@ -5,6 +5,8 @@ let complaints = [];
 let news = [];
 let employees = [];
 let banners = [];
+let knownComplaintIds = null;
+let pollingInterval = null;
 
 // DOM Elements
 const loginContainer = document.getElementById('login-container');
@@ -133,6 +135,9 @@ async function showDashboard() {
     loadComplaints();
     loadNews();
     loadBanners();
+    
+    // Start background updates and alarm polling
+    startPolling();
 }
 
 async function switchTab(tabId) {
@@ -223,7 +228,50 @@ async function handleLogin(e) {
     }
 }
 
+function playAlarmSound() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const playBeep = (time, duration, frequency) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = 'sine';
+            osc.frequency.value = frequency;
+            gain.gain.setValueAtTime(0.3, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + duration - 0.05);
+            osc.start(time);
+            osc.stop(time + duration);
+        };
+        const now = audioCtx.currentTime;
+        playBeep(now, 0.15, 880);
+        playBeep(now + 0.2, 0.15, 880);
+        playBeep(now + 0.5, 0.15, 880);
+        playBeep(now + 0.7, 0.15, 880);
+    } catch (err) {
+        console.error('Failed to play synthesized alarm sound:', err);
+    }
+}
+
+function startPolling() {
+    if (pollingInterval) clearInterval(pollingInterval);
+    pollingInterval = setInterval(() => {
+        if (token) {
+            loadComplaints(true);
+        }
+    }, 5000);
+}
+
+function stopPolling() {
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+    }
+}
+
 function handleLogout() {
+    stopPolling();
+    knownComplaintIds = null;
     token = null;
     userEmail = null;
     localStorage.removeItem('crm_token');
@@ -233,8 +281,10 @@ function handleLogout() {
 }
 
 // Complaints Manager Logic
-async function loadComplaints() {
-    complaintsLoader.classList.remove('hidden');
+async function loadComplaints(isSilent = false) {
+    if (!isSilent) {
+        complaintsLoader.classList.remove('hidden');
+    }
     try {
         const response = await fetch('/api/complaints', {
             method: 'GET',
@@ -252,14 +302,37 @@ async function loadComplaints() {
             throw new Error('Failed to retrieve complaints.');
         }
 
-        complaints = await response.json();
+        const data = await response.json();
+        
+        let hasNew = false;
+        if (knownComplaintIds === null) {
+            knownComplaintIds = new Set(data.map(c => c.id));
+        } else {
+            data.forEach(c => {
+                if (!knownComplaintIds.has(c.id)) {
+                    knownComplaintIds.add(c.id);
+                    hasNew = true;
+                    showToast(`New complaint received: "${c.title}"`, 'info');
+                }
+            });
+        }
+
+        complaints = data;
         calculateStats();
         renderComplaints();
 
+        if (hasNew) {
+            playAlarmSound();
+        }
+
     } catch (err) {
-        showToast(err.message, 'error');
+        if (!isSilent) {
+            showToast(err.message, 'error');
+        }
     } finally {
-        complaintsLoader.classList.add('hidden');
+        if (!isSilent) {
+            complaintsLoader.classList.add('hidden');
+        }
     }
 }
 
