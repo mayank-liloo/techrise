@@ -79,11 +79,21 @@ const login = async (req, res) => {
       return res.status(403).json({ error: 'Access denied. Customers are only permitted to log in via the mobile application.' });
     }
 
-    // 4. Generate Secure JWT Token
+    // 4. Generate Secure JWT Token and Session ID
+    const crypto = require('crypto');
+    const sessionId = crypto.randomBytes(16).toString('hex');
+
+    // Store the active session ID in Firestore
+    await db.collection('users').doc(userDoc.id).update({
+      activeSessionId: sessionId,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
     const payload = {
       userId: userDoc.id,
       email: userData.email,
-      role: userData.role
+      role: userData.role,
+      sessionId: sessionId
     };
 
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
