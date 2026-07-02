@@ -90,20 +90,7 @@ fun SplashScreen(
                     .alpha(alpha.value)
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
 
-            // Subtext/Motto with smooth fade-in
-            Text(
-                text = "Secure Support CRM",
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFFE65100),
-                    fontSize = 18.sp,
-                    letterSpacing = 1.5.sp
-                ),
-                modifier = Modifier.alpha(alpha.value),
-                textAlign = TextAlign.Center
-            )
         }
     }
 }
