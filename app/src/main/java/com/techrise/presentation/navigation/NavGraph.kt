@@ -7,12 +7,12 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.techrise.presentation.auth.AuthScreen
-import com.techrise.presentation.auth.AuthViewModel
+import com.techrise.presentation.auth.*
 import com.techrise.presentation.complaints.*
 import com.techrise.presentation.admin.*
 
 sealed class Screen(val route: String) {
+    object Splash : Screen("splash")
     object Auth : Screen("auth")
     object CustomerHome : Screen("customer_home")
     object CreateComplaint : Screen("create_complaint")
@@ -27,12 +27,34 @@ sealed class Screen(val route: String) {
 
 @Composable
 fun TechRiseNavGraph(
+    repository: com.techrise.data.repository.TechRiseRepository,
     navController: NavHostController = rememberNavController()
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Auth.route
+        startDestination = Screen.Splash.route
     ) {
+        composable(Screen.Splash.route) {
+            SplashScreen(
+                repository = repository,
+                onNavigateToAuth = {
+                    navController.navigate(Screen.Auth.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                },
+                onNavigateToCustomerHome = {
+                    navController.navigate(Screen.CustomerHome.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                },
+                onNavigateToAdminHome = {
+                    navController.navigate(Screen.AdminHome.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
         composable(Screen.Auth.route) {
             val authViewModel: AuthViewModel = hiltViewModel()
             AuthScreen(
