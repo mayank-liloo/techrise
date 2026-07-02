@@ -583,12 +583,46 @@ function renderNewsHistory() {
         card.innerHTML = `
             <div class="news-item-header">
                 <h4>${escapeHtml(item.title)}</h4>
-                <span class="news-item-date">${formattedDate}</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="news-item-date">${formattedDate}</span>
+                    <button class="btn-delete-news" data-id="${item.id}" style="background: none; border: none; color: #ff4d4f; cursor: pointer; font-size: 14px; padding: 4px;" title="Delete Announcement">🗑️</button>
+                </div>
             </div>
-            <p>${escapeHtml(item.content)}</p>
+            <p style="margin-top: 8px; color: var(--text-secondary);">${escapeHtml(item.content)}</p>
         `;
         newsList.appendChild(card);
+
+        const btnDelete = card.querySelector(`.btn-delete-news[data-id="${item.id}"]`);
+        if (btnDelete) {
+            btnDelete.addEventListener('click', () => {
+                deleteNewsBulletin(item.id);
+            });
+        }
     });
+}
+
+async function deleteNewsBulletin(newsId) {
+    if (!confirm('Are you sure you want to delete this announcement?')) return;
+    
+    try {
+        const response = await fetch(`/api/news/${newsId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to delete announcement.');
+        }
+        
+        showToast('Announcement deleted successfully!', 'success');
+        loadNews();
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
 }
 
 async function handlePublishNews(e) {
